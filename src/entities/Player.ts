@@ -4,6 +4,7 @@ import type { Direction } from '../gfx/TextureGenerator';
 import { ensurePlayerTexture } from '../gfx/TextureGenerator';
 import type { IDamageable } from '../interfaces/IDamageable';
 import HealthBar from '../ui/HealthBar';
+import Projectile from './Projectile';
 
 /**
  * The controllable player character.
@@ -76,13 +77,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         // Shoot
         if (Phaser.Input.Keyboard.JustDown(this.fireKey) && t - this.lastShot > Player.FIRE_DELAY) {
             this.lastShot = t;
-            const p = new (this.projectiles.classType as any)(
-                this.scene,
-                this.x,
-                this.y,
-                this.currentDir,
-            );
-            this.projectiles.add(p);
+            const projectile = new Projectile(this.scene, this.x, this.y, this.currentDir);
+            this.projectiles.add(projectile);
         }
 
         // Update texture if direction changed
