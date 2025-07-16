@@ -132,7 +132,7 @@ export class EnemyAISystem {
 import Phaser from 'phaser';
 import { GameConfig, ConfigValidator } from '../config/GameConfig';
 import { ServiceManager } from '../services/ServiceManager';
-import { InputService } from '../services/InputService';
+import { InputService } from '../services/InputService.ts';
 import { CollisionService } from '../services/CollisionService';
 import { GameStateService } from '../services/GameStateService';
 import { EnemySpawnSystem } from '../systems/EnemySpawnSystem';
