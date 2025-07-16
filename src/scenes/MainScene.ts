@@ -43,13 +43,12 @@ export default class MainScene extends Phaser.Scene {
           this.scale.height / 2,
           this.projectiles,
         );
-        this.player.setName('player'); // For spawn service
 
         // Create enemy group
         this.enemies = this.physics.add.group();
 
-        // ✨ NEW: Initialize spawn service
-        this.enemySpawner = new EnemySpawnService(this, this.enemies);
+        // ✨ NEW: Initialize spawn service with player reference
+        this.enemySpawner = new EnemySpawnService(this, this.enemies, this.player);
         
         // ✨ NEW: Add wave progression controls
         this.waveStartKey = this.input.keyboard!.addKey('N'); // 'N' for Next wave
@@ -95,11 +94,14 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Bullet hit enemy callback
+     * ✨ NEW: Bullet hit enemy callback (Type-safe)
      */
-    private onBulletHitEnemy(bullet: Phaser.GameObjects.GameObject, enemy: Phaser.GameObjects.GameObject): void {
-        const projectile = bullet as Projectile;
-        const enemyEntity = enemy as Enemy;
+    private onBulletHitEnemy(
+        bulletObj: Phaser.Types.Physics.Arcade.GameObjectWithBody, 
+        enemyObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
+    ): void {
+        const projectile = bulletObj as Projectile;
+        const enemyEntity = enemyObj as Enemy;
         
         projectile.destroy();
         enemyEntity.takeDamage(1);
@@ -108,11 +110,14 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Enemy hit player callback
+     * ✨ NEW: Enemy hit player callback (Type-safe)
      */
-    private onEnemyHitPlayer(player: Phaser.GameObjects.GameObject, enemy: Phaser.GameObjects.GameObject): void {
-        const playerEntity = player as Player;
-        const enemyEntity = enemy as Enemy;
+    private onEnemyHitPlayer(
+        playerObj: Phaser.Types.Physics.Arcade.GameObjectWithBody, 
+        enemyObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
+    ): void {
+        const playerEntity = playerObj as Player;
+        const enemyEntity = enemyObj as Enemy;
         
         playerEntity.takeDamage(1, this.time.now);
         console.log(`😵 Player hit by ${enemyEntity.rank} enemy`);

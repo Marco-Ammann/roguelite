@@ -24,13 +24,15 @@ export interface WaveConfig {
 export class EnemySpawnService {
   private scene: Phaser.Scene;
   private enemies: Phaser.Physics.Arcade.Group;
+  private player?: Phaser.GameObjects.Sprite; // Store player reference
   private spawnTimer?: Phaser.Time.TimerEvent;
   private currentWave = 0;
   private spawnsRemaining: SpawnConfig[] = [];
 
-  constructor(scene: Phaser.Scene, enemies: Phaser.Physics.Arcade.Group) {
+  constructor(scene: Phaser.Scene, enemies: Phaser.Physics.Arcade.Group, player?: Phaser.GameObjects.Sprite) {
     this.scene = scene;
     this.enemies = enemies;
+    this.player = player; // Optional player reference for safe spawning
   }
 
   /**
@@ -79,9 +81,14 @@ export class EnemySpawnService {
       const x = Phaser.Math.Between(50, this.scene.scale.width - 50);
       const y = Phaser.Math.Between(50, this.scene.scale.height - 50);
       
-      // Check distance to player (if exists)
-      const player = this.scene.children.getByName('player');
-      if (player && Phaser.Math.Distance.Between(x, y, player.x, player.y) > safeDistance) {
+      // Check distance to player (if player reference exists)
+      if (this.player && Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) > safeDistance) {
+        const baseSpeed = this.getBaseSpeed(config.rank);
+        const finalSpeed = baseSpeed * (config.speedMultiplier || 1.0);
+        
+        return createEnemy(this.scene, x, y, config.rank, finalSpeed);
+      } else if (!this.player) {
+        // No player reference, spawn anywhere
         const baseSpeed = this.getBaseSpeed(config.rank);
         const finalSpeed = baseSpeed * (config.speedMultiplier || 1.0);
         
