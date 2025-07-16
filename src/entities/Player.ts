@@ -1,36 +1,33 @@
-// src/entities/Player.ts (Minimal Update)
+// src/entities/Player.ts (Fixed Version)
 /**
- * Schritt 3: Minimale Verbesserung des Players
- * Nur die kritischsten Änderungen ohne Breaking Changes
+ * Minimale Verbesserung ohne Type-Import Probleme
  */
 
 import Phaser from 'phaser';
-import { GameConfig, Direction, getPlayerSpeed } from '../config/GameConfig';
-import type { Direction as DirectionType } from '../gfx/TextureGenerator';
+import { GameConfig, getPlayerSpeed } from '../config/GameConfig';
 import { ensurePlayerTexture } from '../gfx/TextureGenerator';
 import type { IDamageable } from '../interfaces/IDamageable';
+import type { Direction } from '../gfx/TextureGenerator';
 import HealthBar from '../ui/HealthBar';
 import Projectile from './Projectile';
-import { InputService, InputState } from '../services/InputService';
+import { InputService } from '../services/InputService';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite implements IDamageable {
-  // Public properties (for backward compatibility)
+  // Properties
   readonly maxHp = GameConfig.PLAYER.MAX_HP;
   hp = this.maxHp;
 
-  // Private properties
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private healthBar: HealthBar;
   private projectiles: Phaser.Physics.Arcade.Group;
   private fireKey: Phaser.Input.Keyboard.Key;
   
-  // Optional InputService (can be null for backward compatibility)
+  // Optional InputService
   private inputService?: InputService;
   
-  // State tracking
   private lastShot = 0;
   private lastHit = 0;
-  private currentDir: Direction = 'down';
+  private currentDir: 'up' | 'down' | 'left' | 'right' = 'down';
 
   constructor(
     scene: Phaser.Scene,
@@ -41,56 +38,59 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     ensurePlayerTexture(scene, 'down');
     super(scene, x, y, 'player-down');
 
-    // Initialize old way for compatibility
+    // Old system (always works)
     this.cursors = scene.input.keyboard!.createCursorKeys();
     this.fireKey = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.projectiles = projectiles;
 
-    // Try to initialize new InputService (optional)
+    // Try new system (optional)
     try {
       this.inputService = new InputService(scene);
-      console.log('Player: Using new InputService');
+      console.log('Player: Using enhanced input');
     } catch (error) {
-      console.log('Player: Falling back to old input system');
-      this.inputService = undefined;
+      console.log('Player: Using standard input');
     }
 
-    // Health bar
     this.healthBar = new HealthBar(scene, this);
-    
-    console.log('Player created with enhanced input system');
   }
 
   update(time: number, _delta: number): void {
-    // Use new input system if available, otherwise fall back to old
     if (this.inputService) {
-      this.updateWithInputService(time);
+      this.updateWithNewInput(time);
     } else {
       this.updateLegacy(time);
     }
   }
 
-  // New update method using InputService
-  private updateWithInputService(time: number): void {
+  private updateWithNewInput(time: number): void {
     const input = this.inputService!.getInputState();
     
-    // Handle movement
-    this.handleMovement(input.movement, input.direction);
+    // Movement
+    if (input.movement.length() > 0) {
+      const velocity = input.movement.clone().scale(getPlayerSpeed());
+      this.setVelocity(velocity.x, velocity.y);
+      
+      if (input.direction && input.direction !== this.currentDir) {
+        this.updateTexture(input.direction);
+      }
+    } else {
+      this.setVelocity(0, 0);
+    }
     
-    // Handle shooting
+    // Shooting
     if (input.isFiring && input.direction) {
       this.tryShoot(time, input.direction);
     }
   }
 
-  // Legacy update method (unchanged for compatibility)
   private updateLegacy(time: number): void {
     const dir = new Phaser.Math.Vector2(
       (this.cursors.left?.isDown ? -1 : 0) + (this.cursors.right?.isDown ? 1 : 0),
       (this.cursors.up?.isDown ? -1 : 0) + (this.cursors.down?.isDown ? 1 : 0),
     );
 
-    let newDir: Direction | null = null;
+    let newDir: 'up' | 'down' | 'left' | 'right' | null = null;
+    
     if (dir.lengthSq() > 0) {
       dir.normalize().scale(getPlayerSpeed());
       this.setVelocity(dir.x, dir.y);
@@ -104,51 +104,33 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
       this.setVelocity(0, 0);
     }
 
-    // Shoot
     if (Phaser.Input.Keyboard.JustDown(this.fireKey) && newDir) {
       this.tryShoot(time, newDir);
     }
 
-    // Update texture if direction changed
     if (newDir && newDir !== this.currentDir) {
       this.updateTexture(newDir);
     }
   }
 
-  // Shared movement logic
-  private handleMovement(movement: Phaser.Math.Vector2, direction: Direction | null): void {
-    if (movement.length() > 0) {
-      const velocity = movement.clone().scale(getPlayerSpeed());
-      this.setVelocity(velocity.x, velocity.y);
-      
-      if (direction && direction !== this.currentDir) {
-        this.updateTexture(direction);
-      }
-    } else {
-      this.setVelocity(0, 0);
-    }
-  }
-
-  // Shared shooting logic
-  private tryShoot(currentTime: number, direction: Direction): boolean {
+  private tryShoot(currentTime: number, direction: 'up' | 'down' | 'left' | 'right'): boolean {
     if (currentTime - this.lastShot < GameConfig.PLAYER.FIRE_DELAY) {
       return false;
     }
 
     this.lastShot = currentTime;
-    const projectile = new Projectile(this.scene, this.x, this.y, direction as DirectionType);
+    const projectile = new Projectile(this.scene, this.x, this.y, direction as Direction);
     this.projectiles.add(projectile);
     return true;
   }
 
-  // Shared texture update
-  private updateTexture(newDirection: Direction): void {
+  private updateTexture(newDirection: 'up' | 'down' | 'left' | 'right'): void {
     ensurePlayerTexture(this.scene, newDirection);
     this.setTexture(`player-${newDirection}`);
     this.currentDir = newDirection;
   }
 
-  // IDamageable implementation (unchanged)
+  // IDamageable
   takeDamage(amount: number, timestamp?: number): void {
     const now = timestamp ?? this.scene.time.now;
     
@@ -174,12 +156,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
   private die(): void {
     console.log('Player died - restarting scene');
     this.healthBar.destroy();
-    this.inputService?.destroy();
     this.scene.scene.restart();
   }
 
-  // Public API methods (for external access)
-  public getCurrentDirection(): Direction {
+  // Public API
+  public getCurrentDirection(): 'up' | 'down' | 'left' | 'right' {
     return this.currentDir;
   }
 
@@ -191,14 +172,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     return new Phaser.Math.Vector2(this.x, this.y);
   }
 
-  // Upgrade methods (future-proofing)
   public heal(amount: number): void {
     const oldHp = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amount);
     console.log(`Player healed: ${oldHp} -> ${this.hp} (+${amount})`);
-  }
-
-  public isUsingNewInputSystem(): boolean {
-    return this.inputService !== undefined;
   }
 }
