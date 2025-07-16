@@ -32,7 +32,7 @@ export default class MainScene extends Phaser.Scene {
         );
 
         // Debug overlay (F1 toggle)
-        new DebugOverlay(this);
+        new DebugOverlay(this, this.player, this.enemies, this.projectiles);
 
         // Create a group of enemies
         this.enemies = this.physics.add.group();

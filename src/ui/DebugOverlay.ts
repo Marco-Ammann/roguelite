@@ -5,13 +5,26 @@ import Logger from '../utils/Logger';
  * Lightweight on–screen debug overlay showing FPS and entity counts.
  * Toggled with F1 (visible by default in dev mode).
  */
+import Player from '../entities/Player';
+
 export default class DebugOverlay extends Phaser.GameObjects.Text {
   private readonly sceneRef: Phaser.Scene;
+  private readonly playerRef: Player;
+  private readonly enemies: Phaser.Physics.Arcade.Group;
+  private readonly projectiles: Phaser.Physics.Arcade.Group;
   private readonly toggleKey: Phaser.Input.Keyboard.Key;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(
+    scene: Phaser.Scene,
+    player: Player,
+    enemies: Phaser.Physics.Arcade.Group,
+    projectiles: Phaser.Physics.Arcade.Group,
+  ) {
     super(scene, 4, 4, '', { fontSize: '16px', color: '#00ff00' });
     this.sceneRef = scene;
+    this.playerRef = player;
+    this.enemies = enemies;
+    this.projectiles = projectiles;
     scene.add.existing(this).setScrollFactor(0).setDepth(1000);
 
     // Toggle F1
@@ -29,8 +42,13 @@ export default class DebugOverlay extends Phaser.GameObjects.Text {
     if (!this.visible) return;
 
     const fps = Math.round(this.sceneRef.game.loop.actualFps);
-    const entities = this.sceneRef.children.list.length;
-    this.setText(`FPS: ${fps}\nObjects: ${entities}`);
+    const hp = this.playerRef.hp;
+    const enemies = this.enemies.countActive(true);
+    const bullets = this.projectiles.countActive(true);
+    this.setText(`FPS: ${fps}` +
+      `\nHP: ${hp}` +
+      `\nEnemies: ${enemies}` +
+      `\nBullets: ${bullets}`);
   }
 
   override destroy(fromScene?: boolean): void {
