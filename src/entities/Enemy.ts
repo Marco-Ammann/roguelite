@@ -64,4 +64,22 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite implements IDama
             this.dir = newDir;
         }
     }
+
+    // IDamageable implementation --------------------------
+    takeDamage(amount: number): void {
+        if (this.hp <= 0) return;
+        this.hp = Math.max(0, this.hp - amount);
+        if (this.hp === 0) {
+            this.die();
+        }
+    }
+
+    isDead(): boolean {
+        return this.hp === 0;
+    }
+
+    private die(): void {
+        this.healthBar.destroy();
+        this.destroy();
+    }
 }

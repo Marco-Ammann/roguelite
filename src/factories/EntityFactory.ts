@@ -1,15 +1,21 @@
 import Phaser from 'phaser';
 import Player from '../entities/Player';
 import Enemy from '../entities/Enemy';
+
 import { EnemyRank } from '../enums/EnemyRank';
-import { ensurePlayerTexture, ensureEnemyTexture } from '../gfx/TextureGenerator';
+import { ensureEnemyTexture } from '../gfx/TextureGenerator';
 
 /**
  * Creates and returns a fully-initialised Player instance.
  */
-export function createPlayer(scene: Phaser.Scene, x: number, y: number): Player {
-    ensurePlayerTexture(scene);
-    const p = new Player(scene, x, y);
+export function createPlayer(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  projectiles: Phaser.Physics.Arcade.Group,
+): Player {
+
+    const p = new Player(scene, x, y, projectiles);
     scene.add.existing(p);
     scene.physics.add.existing(p);
     return p;

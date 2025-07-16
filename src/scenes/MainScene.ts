@@ -4,10 +4,12 @@ import Enemy from '../entities/Enemy';
 import { createPlayer, createEnemy } from '../factories/EntityFactory';
 import { EnemyRank } from '../enums/EnemyRank';
 import DebugOverlay from '../ui/DebugOverlay';
+import Projectile from '../entities/Projectile';
 
 export default class MainScene extends Phaser.Scene {
     private player!: Player;
     private enemies!: Phaser.Physics.Arcade.Group;
+    private projectiles!: Phaser.Physics.Arcade.Group;
 
     constructor() {
         super("MainScene");
@@ -18,8 +20,16 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
+        // Projectile group
+        this.projectiles = this.physics.add.group({ classType: Projectile });
+
         // Create player via factory (centred)
-        this.player = createPlayer(this, this.scale.width / 2, this.scale.height / 2);
+        this.player = createPlayer(
+          this,
+          this.scale.width / 2,
+          this.scale.height / 2,
+          this.projectiles,
+        );
 
         // Debug overlay (F1 toggle)
         new DebugOverlay(this);

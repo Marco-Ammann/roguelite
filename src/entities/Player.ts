@@ -13,6 +13,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
   readonly maxHp = 10;
   hp = this.maxHp;
   private readonly healthBar: HealthBar;
+  private readonly projectiles: Phaser.Physics.Arcade.Group;
+  private readonly fireKey: Phaser.Input.Keyboard.Key;
+  private lastShot = 0;
+  private static readonly FIRE_DELAY = 250; // ms
+  private static readonly HIT_COOLDOWN = 500; // ms
+  private lastHit = 0;
   private currentDir: Direction = 'down';
 
     /**
@@ -22,11 +28,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * @param x The initial x-coordinate of the player.
      * @param y The initial y-coordinate of the player.
      */
-    constructor(scene: Phaser.Scene, x: number, y: number) {
+    constructor(
+      scene: Phaser.Scene,
+      x: number,
+      y: number,
+      projectiles: Phaser.Physics.Arcade.Group,
+    ) {
         ensurePlayerTexture(scene, 'down');
         super(scene, x, y, 'player-down');
         // The input plugin is guaranteed to exist for this scene, so we can safely use the non-null assertion
         this.cursors = scene.input.keyboard!.createCursorKeys();
+        this.fireKey = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.projectiles = projectiles;
 
     // Health bar
     this.healthBar = new HealthBar(scene, this);
@@ -39,7 +52,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * @param _t The current time.
      * @param _dt The time since the last update.
      */
-    update(_t: number, _dt: number) {
+    update(t: number, _dt: number) {
         const dir = new Phaser.Math.Vector2(
             (this.cursors.left?.isDown ? -1 : 0) + (this.cursors.right?.isDown ? 1 : 0),
             (this.cursors.up?.isDown ? -1 : 0) + (this.cursors.down?.isDown ? 1 : 0),
@@ -60,6 +73,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
             this.setVelocity(0, 0);
         }
 
+        // Shoot
+        if (Phaser.Input.Keyboard.JustDown(this.fireKey) && t - this.lastShot > Player.FIRE_DELAY) {
+            this.lastShot = t;
+            const p = new (this.projectiles.classType as any)(
+                this.scene,
+                this.x,
+                this.y,
+                this.currentDir,
+            );
+            this.projectiles.add(p);
+        }
+
         // Update texture if direction changed
         if (newDir && newDir !== this.currentDir) {
             ensurePlayerTexture(this.scene, newDir);
@@ -68,8 +93,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         }
     }
 
-  /** Applies damage to the player. */
-  takeDamage(amount: number): void {
+  /** Applies damage to the player, with a small hit cooldown. */
+  takeDamage(amount: number, now: number = this.scene.time.now): void {
+    if (now - this.lastHit < Player.HIT_COOLDOWN) return;
+    this.lastHit = now;
     if (this.hp <= 0) return;
     this.hp = Math.max(0, this.hp - amount);
     if (this.hp === 0) {

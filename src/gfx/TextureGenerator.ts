@@ -48,6 +48,16 @@ import { EnemyRank } from '../enums/EnemyRank';
 
 export type Direction = 'down' | 'up' | 'left' | 'right';
 
+// Bullet texture (4×4 white square)
+export function ensureBulletTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists('bullet')) return;
+  const g = scene.add.graphics();
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(0, 0, 4, 4);
+  g.generateTexture('bullet', 4, 4);
+  g.destroy();
+}
+
 export function ensureEnemyTexture(
   scene: Phaser.Scene,
   rank: EnemyRank = EnemyRank.Standard,
