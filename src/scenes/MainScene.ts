@@ -31,11 +31,11 @@ export default class MainScene extends Phaser.Scene {
           this.projectiles,
         );
 
-        // Debug overlay (F1 toggle)
-        new DebugOverlay(this, this.player, this.enemies, this.projectiles);
-
         // Create a group of enemies
         this.enemies = this.physics.add.group();
+
+        // Debug overlay (F1 toggle)
+        new DebugOverlay(this, this.player, this.enemies, this.projectiles);
 
         // Spawn 4 standard and 1 elite enemy for demo
         for (let i = 0; i < 4; i++) {
