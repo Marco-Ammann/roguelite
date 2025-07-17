@@ -1,6 +1,6 @@
 /**
  * src/systems/ProjectilePool.ts - Fixed TypeScript Issues
- * 
+ *
  * FIXES:
  * - Fixed PoolableProjectile interface to extend GameObject
  * - Fixed type conversion issues
@@ -8,37 +8,37 @@
  * - Fixed method chaining issues
  */
 
-import Phaser from 'phaser';
-import Projectile from '../entities/Projectile';
-import PierceProjectile from '../entities/PierceProjectile';
-import ExplosiveProjectile from '../entities/ExplosiveProjectile';
-import { WeaponType } from './WeaponSystem';
-import type { Direction } from '../gfx/TextureGenerator';
-import Logger from '../utils/Logger';
+import Phaser from "phaser";
+import Projectile from "../entities/Projectile";
+import PierceProjectile from "../entities/PierceProjectile";
+import ExplosiveProjectile from "../entities/ExplosiveProjectile";
+import { WeaponType } from "./WeaponSystem";
+import type { Direction } from "../gfx/TextureGenerator";
+import Logger from "../utils/Logger";
 
-interface PoolableProjectile extends Phaser.GameObjects.GameObject {
+interface PoolableProjectile {
   reset(x: number, y: number, direction: Direction): void;
-  setActive(active: boolean): PoolableProjectile;
-  setVisible(visible: boolean): PoolableProjectile;
+  setActive(active: boolean): any; // Changed from PoolableProjectile to any
+  setVisible(visible: boolean): any; // Changed from PoolableProjectile to any
   destroy(): void;
 }
 
 export default class ProjectilePool {
   private scene: Phaser.Scene;
   private projectileGroup: Phaser.Physics.Arcade.Group;
-  
+
   // Separate pools für jeden Projektil-Typ
   private normalPool: Projectile[] = [];
   private piercePool: PierceProjectile[] = [];
   private explosivePool: ExplosiveProjectile[] = [];
-  
+
   // Pool-Konfiguration
   private readonly POOL_SIZE = {
-    normal: 50,      // Viele normale Projektile
-    pierce: 15,      // Weniger Pierce (langsamer fire rate)
-    explosive: 8,    // Wenige Explosive (sehr langsam)
+    normal: 50, // Viele normale Projektile
+    pierce: 15, // Weniger Pierce (langsamer fire rate)
+    explosive: 8, // Wenige Explosive (sehr langsam)
   };
-  
+
   // Statistiken für Debug
   private stats = {
     created: { normal: 0, pierce: 0, explosive: 0 },
@@ -46,12 +46,15 @@ export default class ProjectilePool {
     active: { normal: 0, pierce: 0, explosive: 0 },
   };
 
-  constructor(scene: Phaser.Scene, projectileGroup: Phaser.Physics.Arcade.Group) {
+  constructor(
+    scene: Phaser.Scene,
+    projectileGroup: Phaser.Physics.Arcade.Group
+  ) {
     this.scene = scene;
     this.projectileGroup = projectileGroup;
-    
+
     this.preAllocatePools();
-    Logger.info('ProjectilePool: Initialized with pre-allocated pools');
+    Logger.info("ProjectilePool: Initialized with pre-allocated pools");
   }
 
   /**
@@ -60,40 +63,47 @@ export default class ProjectilePool {
   private preAllocatePools(): void {
     // Normal Projectiles
     for (let i = 0; i < this.POOL_SIZE.normal; i++) {
-      const projectile = new Projectile(this.scene, 0, 0, 'down');
+      const projectile = new Projectile(this.scene, 0, 0, "down");
       projectile.setActive(false);
       projectile.setVisible(false);
       this.normalPool.push(projectile);
       this.stats.created.normal++;
     }
-    
-    // Pierce Projectiles  
+
+    // Pierce Projectiles
     for (let i = 0; i < this.POOL_SIZE.pierce; i++) {
-      const projectile = new PierceProjectile(this.scene, 0, 0, 'down', 3);
+      const projectile = new PierceProjectile(this.scene, 0, 0, "down", 3);
       projectile.setActive(false);
       projectile.setVisible(false);
       this.piercePool.push(projectile);
       this.stats.created.pierce++;
     }
-    
+
     // Explosive Projectiles
     for (let i = 0; i < this.POOL_SIZE.explosive; i++) {
-      const projectile = new ExplosiveProjectile(this.scene, 0, 0, 'down', 60);
+      const projectile = new ExplosiveProjectile(this.scene, 0, 0, "down", 60);
       projectile.setActive(false);
       projectile.setVisible(false);
       this.explosivePool.push(projectile);
       this.stats.created.explosive++;
     }
-    
-    Logger.info(`ProjectilePool: Pre-allocated ${this.getTotalPoolSize()} projectiles`);
+
+    Logger.info(
+      `ProjectilePool: Pre-allocated ${this.getTotalPoolSize()} projectiles`
+    );
   }
 
   /**
    * Get projectile from pool (main API)
    */
-  public getProjectile(type: WeaponType, x: number, y: number, direction: Direction): Phaser.GameObjects.GameObject {
+  public getProjectile(
+    type: WeaponType,
+    x: number,
+    y: number,
+    direction: Direction
+  ): Phaser.GameObjects.GameObject {
     let projectile: PoolableProjectile;
-    
+
     switch (type) {
       case WeaponType.Pierce:
         projectile = this.getPierceProjectile() as PoolableProjectile;
@@ -108,15 +118,15 @@ export default class ProjectilePool {
         this.stats.active.normal++;
         break;
     }
-    
+
     // Reset position und direction
     projectile.reset(x, y, direction);
     projectile.setActive(true);
     projectile.setVisible(true);
-    
+
     // Add to Phaser group
     this.projectileGroup.add(projectile);
-    
+
     return projectile;
   }
 
@@ -125,24 +135,24 @@ export default class ProjectilePool {
    */
   public returnProjectile(projectile: Phaser.GameObjects.GameObject): void {
     const proj = projectile as any;
-    
+
     // Determine type by constructor name
     const type = this.getProjectileType(proj);
-    
+
     // Remove from active group
     this.projectileGroup.remove(projectile);
-    
+
     // Deactivate
     proj.setActive(false);
     proj.setVisible(false);
-    
+
     // Return to appropriate pool
     switch (type) {
-      case 'pierce':
+      case "pierce":
         this.piercePool.push(proj);
         this.stats.active.pierce--;
         break;
-      case 'explosive':
+      case "explosive":
         this.explosivePool.push(proj);
         this.stats.active.explosive--;
         break;
@@ -158,16 +168,18 @@ export default class ProjectilePool {
    */
   private getNormalProjectile(): Projectile {
     let projectile = this.normalPool.pop();
-    
+
     if (!projectile) {
       // Pool exhausted - create new one
-      projectile = new Projectile(this.scene, 0, 0, 'down');
+      projectile = new Projectile(this.scene, 0, 0, "down");
       this.stats.created.normal++;
-      Logger.warn('ProjectilePool: Normal pool exhausted, creating new projectile');
+      Logger.warn(
+        "ProjectilePool: Normal pool exhausted, creating new projectile"
+      );
     } else {
       this.stats.reused.normal++;
     }
-    
+
     return projectile;
   }
 
@@ -176,15 +188,17 @@ export default class ProjectilePool {
    */
   private getPierceProjectile(): PierceProjectile {
     let projectile = this.piercePool.pop();
-    
+
     if (!projectile) {
-      projectile = new PierceProjectile(this.scene, 0, 0, 'down', 3);
+      projectile = new PierceProjectile(this.scene, 0, 0, "down", 3);
       this.stats.created.pierce++;
-      Logger.warn('ProjectilePool: Pierce pool exhausted, creating new projectile');
+      Logger.warn(
+        "ProjectilePool: Pierce pool exhausted, creating new projectile"
+      );
     } else {
       this.stats.reused.pierce++;
     }
-    
+
     return projectile;
   }
 
@@ -193,25 +207,30 @@ export default class ProjectilePool {
    */
   private getExplosiveProjectile(): ExplosiveProjectile {
     let projectile = this.explosivePool.pop();
-    
+
     if (!projectile) {
-      projectile = new ExplosiveProjectile(this.scene, 0, 0, 'down', 60);
+      projectile = new ExplosiveProjectile(this.scene, 0, 0, "down", 60);
       this.stats.created.explosive++;
-      Logger.warn('ProjectilePool: Explosive pool exhausted, creating new projectile');
+      Logger.warn(
+        "ProjectilePool: Explosive pool exhausted, creating new projectile"
+      );
     } else {
       this.stats.reused.explosive++;
     }
-    
+
     return projectile;
   }
 
   /**
    * Determine projectile type by constructor
    */
-  private getProjectileType(projectile: any): 'normal' | 'pierce' | 'explosive' {
-    if (projectile.constructor.name === 'PierceProjectile') return 'pierce';
-    if (projectile.constructor.name === 'ExplosiveProjectile') return 'explosive';
-    return 'normal';
+  private getProjectileType(
+    projectile: any
+  ): "normal" | "pierce" | "explosive" {
+    if (projectile.constructor.name === "PierceProjectile") return "pierce";
+    if (projectile.constructor.name === "ExplosiveProjectile")
+      return "explosive";
+    return "normal";
   }
 
   /**
@@ -225,24 +244,32 @@ export default class ProjectilePool {
    * Get total pool size
    */
   public getTotalPoolSize(): number {
-    return this.normalPool.length + this.piercePool.length + this.explosivePool.length;
+    return (
+      this.normalPool.length +
+      this.piercePool.length +
+      this.explosivePool.length
+    );
   }
 
   /**
    * Get active projectiles count
    */
   public getActiveCount(): number {
-    return this.stats.active.normal + this.stats.active.pierce + this.stats.active.explosive;
+    return (
+      this.stats.active.normal +
+      this.stats.active.pierce +
+      this.stats.active.explosive
+    );
   }
 
   /**
    * Emergency cleanup - return all active projectiles
    */
   public emergencyCleanup(): void {
-    this.projectileGroup.children.entries.forEach(child => {
+    this.projectileGroup.children.entries.forEach((child) => {
       this.returnProjectile(child);
     });
-    Logger.info('ProjectilePool: Emergency cleanup completed');
+    Logger.info("ProjectilePool: Emergency cleanup completed");
   }
 
   /**
@@ -250,16 +277,18 @@ export default class ProjectilePool {
    */
   public destroy(): void {
     this.emergencyCleanup();
-    
+
     // Destroy all pooled projectiles
-    [...this.normalPool, ...this.piercePool, ...this.explosivePool].forEach(proj => {
-      proj.destroy();
-    });
-    
+    [...this.normalPool, ...this.piercePool, ...this.explosivePool].forEach(
+      (proj) => {
+        proj.destroy();
+      }
+    );
+
     this.normalPool = [];
     this.piercePool = [];
     this.explosivePool = [];
-    
-    Logger.info('ProjectilePool: Destroyed all pools');
+
+    Logger.info("ProjectilePool: Destroyed all pools");
   }
 }

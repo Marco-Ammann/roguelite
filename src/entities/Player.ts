@@ -144,12 +144,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * @param time - Current game time
      * @param delta - Time delta since last update
      */
-    update(time: number, delta: number): void {
-        this.handleMovementInput();
-        this.handleWeaponInput(time);
-        this.handleActionInput();
-        this.updateVisuals();
-    }
+    update(time: number, _delta: number): void {
+      this.handleMovementInput();
+      this.handleWeaponInput(time);
+      this.handleActionInput();
+      this.updateVisuals();
+  }
 
     /**
      * Handle movement input and apply physics-based movement

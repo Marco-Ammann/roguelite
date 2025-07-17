@@ -186,7 +186,7 @@ export class CollisionService implements ICollisionService {
   private processProjectileCollision(projectile: any, enemy: any): void {
     // Determine projectile type and handle accordingly
     let shouldDestroy = true;
-    let damageType = DamageType.Normal;
+    let damageType: DamageType = DamageType.Normal; // Add explicit type annotation
     let damage = 1;
 
     // Type-specific collision handling
