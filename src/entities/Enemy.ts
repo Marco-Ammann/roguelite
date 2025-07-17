@@ -16,6 +16,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite implements IDama
   readonly maxHp = 5;
   hp = this.maxHp;
   private readonly healthBar: HealthBar;
+  readonly enemyId: string; // Unique ID for pierce tracking
 
     /**
      * Creates a new enemy at the specified position.
@@ -38,6 +39,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite implements IDama
         this.rank = rank;
         this.speed = speed;
         this.dir = dir;
+        
+        // Generate unique ID for pierce tracking
+        this.enemyId = `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         // health bar UI
         this.healthBar = new HealthBar(scene, this as unknown as Phaser.GameObjects.Sprite & IDamageable, 20, 4);
     }

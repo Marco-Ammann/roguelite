@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import Projectile from '../entities/Projectile';
 import PierceProjectile from '../entities/PierceProjectile';
+import ExplosiveProjectile from '../entities/ExplosiveProjectile';
 import type { Direction } from '../gfx/TextureGenerator';
 import { DamageType } from '../interfaces/ICollisionSystem';
 
@@ -75,9 +76,7 @@ export class WeaponSystem {
         projectile = new PierceProjectile(this.scene, x, y, direction, 3);
         break;
       case WeaponType.Explosive:
-        // TODO: Implement explosive projectile
-        projectile = new Projectile(this.scene, x, y, direction);
-        (projectile as any).setTint(config.color);
+        projectile = new ExplosiveProjectile(this.scene, x, y, direction, 60);
         break;
       default:
         projectile = new Projectile(this.scene, x, y, direction);

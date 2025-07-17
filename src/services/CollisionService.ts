@@ -174,19 +174,25 @@ export class CollisionService implements ICollisionService {
     const enemy = eventData.target as Enemy;
     
     // Check if projectile has pierce capability
-    const shouldDestroy = projectile.onHitEnemy ? 
-      projectile.onHitEnemy(enemy) : 
-      true; // Standard projectiles always destroy
-    
-    // Apply damage to enemy
-    enemy.takeDamage(eventData.damage);
-    
-    // Destroy projectile if needed
-    if (shouldDestroy) {
+    if (projectile.onHitEnemy) {
+      const shouldDestroy = projectile.onHitEnemy(enemy);
+      
+      // Only apply damage if this is a new hit
+      if (!projectile.hitEnemies || !projectile.hitEnemies.has(enemy.enemyId)) {
+        enemy.takeDamage(eventData.damage);
+        Logger.info(`💥 Pierce projectile hit ${enemy.rank} enemy (${projectile.currentPierceCount}/${projectile.maxPierceCount})`);
+      }
+      
+      // Destroy projectile if needed
+      if (shouldDestroy) {
+        projectile.destroy();
+      }
+    } else {
+      // Standard projectile behavior
+      enemy.takeDamage(eventData.damage);
       projectile.destroy();
+      Logger.info(`💥 Projectile hit ${enemy.rank} enemy (destroyed)`);
     }
-    
-    Logger.info(`💥 Projectile hit ${enemy.rank} enemy${shouldDestroy ? ' (destroyed)' : ' (pierced)'}`);
     
     // Event system for future expansion
     this.callbacks?.onProjectileHitEnemy?.(eventData);

@@ -27,18 +27,18 @@ export default class PierceProjectile extends Projectile {
    * Returns true if projectile should be destroyed
    */
   onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
-    const sprite = enemy as Phaser.GameObjects.Sprite;
-    const enemyId = enemy.name || `enemy_${sprite.x}_${sprite.y}`;
+    const enemySprite = enemy as any; // Cast to access enemyId
+    const enemyId = enemySprite.enemyId || `fallback_${enemy.x}_${enemy.y}`;
     
     // Skip if already hit this enemy
     if (this.hitEnemies.has(enemyId)) {
-      return false;
+      return false; // Don't process collision, but don't destroy projectile
     }
     
     this.hitEnemies.add(enemyId);
     this.currentPierceCount++;
     
-    console.log(`🎯 Pierce hit ${this.currentPierceCount}/${this.maxPierceCount}`);
+    console.log(`🎯 Pierce hit ${this.currentPierceCount}/${this.maxPierceCount} (${enemyId})`);
     
     // Destroy if reached max pierce count
     if (this.currentPierceCount >= this.maxPierceCount) {
