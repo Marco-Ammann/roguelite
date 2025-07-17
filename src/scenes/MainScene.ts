@@ -1,7 +1,7 @@
-// src/scenes/MainScene.ts (Phase 1 Update)
+// src/scenes/MainScene.ts (Phase 2.1 Update)
 /**
- * MainScene with EnemySpawnService integration
- * Backward compatible - old code still works
+ * MainScene with CollisionService integration
+ * 
  */
 
 import Phaser from "phaser";
@@ -9,20 +9,26 @@ import Player from "../entities/Player";
 import Enemy from '../entities/Enemy';
 import { createPlayer } from '../factories/EntityFactory';
 import DebugOverlay from '../ui/DebugOverlay';
+import CollisionDebugOverlay from '../ui/CollisionDebugOverlay';
 import Projectile from '../entities/Projectile';
 import { EnemySpawnService, DEFAULT_WAVES } from '../services/EnemySpawnService';
+import { CollisionService } from '../services/CollisionService';
+import type { CollisionGroups, CollisionCallbacks } from '../interfaces/ICollisionSystem';
 
 export default class MainScene extends Phaser.Scene {
     private player!: Player;
     private enemies!: Phaser.Physics.Arcade.Group;
     private projectiles!: Phaser.Physics.Arcade.Group;
     
-    // ✨ NEW: Spawn system
+    // ✨ NEW: Modular services
     private enemySpawner!: EnemySpawnService;
+    private collisionService!: CollisionService;
+    
+    // Wave management
     private currentWaveIndex = 0;
     private waveStartKey!: Phaser.Input.Keyboard.Key;
     
-    // ✅ FIX: Prevent spam logging
+    // Anti-spam logging
     private lastWaveCheckFrame = 0;
     private waveCompleteNotified = false;
 
@@ -35,14 +41,27 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
-        console.log("🎮 MainScene: Starting game");
+        console.log("🎮 MainScene: Starting game (Phase 2.1)");
         
-        // ✅ FIX: Projectile group with correct physics settings
+        this.createEntities();
+        this.initializeServices();
+        this.setupControls();
+        this.setupUI();
+        this.startFirstWave();
+        
+        console.log("✅ MainScene: Setup complete (CollisionService active)");
+        console.log("💡 Controls: WASD/Arrows=Move, Space=Shoot, N=Next Wave, F1=Debug");
+    }
+
+    /**
+     * ✨ REFACTORED: Entity creation (extracted from create)
+     */
+    private createEntities(): void {
+        // Projectile group with correct physics settings
         this.projectiles = this.physics.add.group({ 
             classType: Projectile,
-            // ✅ CRITICAL: Don't override physics settings!
-            collideWorldBounds: false,  // Let projectiles handle their own bounds
-            allowGravity: false,        // No group-level gravity
+            collideWorldBounds: false,
+            allowGravity: false,
         });
 
         // Create player via factory (centred)
@@ -55,87 +74,77 @@ export default class MainScene extends Phaser.Scene {
 
         // Create enemy group
         this.enemies = this.physics.add.group();
+    }
 
-        // ✨ NEW: Initialize spawn service with player reference
+    /**
+     * ✨ NEW: Service initialization (replaces setupCollisions)
+     */
+    private initializeServices(): void {
+        // Initialize spawn service
         this.enemySpawner = new EnemySpawnService(this, this.enemies, this.player);
         
-        // ✨ NEW: Add wave progression controls
-        this.waveStartKey = this.input.keyboard!.addKey('N'); // 'N' for Next wave
+        // ✨ NEW: Initialize collision service
+        this.collisionService = new CollisionService(this);
         
-        // ✨ NEW: Listen to spawn events
+        const collisionGroups: CollisionGroups = {
+            player: this.player,
+            enemies: this.enemies,
+            projectiles: this.projectiles
+        };
+        
+        const collisionCallbacks: CollisionCallbacks = {
+            onProjectileHitEnemy: (eventData) => this.onProjectileHitCallback(eventData),
+            onEnemyHitPlayer: (eventData) => this.onEnemyHitCallback(eventData),
+        };
+        
+        this.collisionService.initialize(collisionGroups, collisionCallbacks);
+        
+        // Event listeners for wave system
         this.events.on('wave:spawning-complete', this.onWaveSpawningComplete, this);
         this.events.on('wave:enemies-cleared', this.onWaveEnemiesCleared, this);
+    }
 
-        // Debug overlay (F1 toggle)
+    /**
+     * ✨ REFACTORED: Controls setup (extracted from create)
+     */
+    private setupControls(): void {
+        this.waveStartKey = this.input.keyboard!.addKey('N'); // 'N' for Next wave
+    }
+
+    /**
+     * ✨ REFACTORED: UI setup (extracted from create)
+     */
+    private setupUI(): void {
         new DebugOverlay(this, this.player, this.enemies, this.projectiles);
+        new CollisionDebugOverlay(this, this.collisionService);
+    }
 
-        // ✨ CHANGED: Start first wave instead of manual spawn
+    /**
+     * ✨ REFACTORED: First wave start (extracted from create)
+     */
+    private startFirstWave(): void {
         this.startNextWave();
-        
-        // ✨ NEW: Setup collision detection
-        this.setupCollisions();
-        
-        console.log("✅ MainScene: Setup complete");
-        console.log("💡 Controls: WASD/Arrows=Move, Space=Shoot, N=Next Wave, F1=Debug");
     }
 
     /**
-     * ✨ NEW: Collision setup (preparing for Phase 2)
+     * ✨ NEW: Collision event callbacks (optional - for future expansion)
      */
-    private setupCollisions(): void {
-        // Player bullets vs Enemies
-        this.physics.add.overlap(
-            this.projectiles,
-            this.enemies,
-            (obj1, obj2) => this.onBulletHitEnemy(obj1, obj2),
-            undefined,
-            this
-        );
+    private onProjectileHitCallback(eventData: any): void {
+        // Future: Custom projectile hit effects, screen shake, particles
+        // For now: Just additional logging
+        console.log(`🎯 CollisionService: Advanced projectile hit processing`);
+    }
 
-        // Enemies vs Player
-        this.physics.add.overlap(
-            this.player,
-            this.enemies,
-            (obj1, obj2) => this.onEnemyHitPlayer(obj1, obj2),
-            undefined,
-            this
-        );
+    private onEnemyHitCallback(eventData: any): void {
+        // Future: Custom player hit effects, screen shake, damage numbers
+        // For now: Just additional logging  
+        console.log(`⚡ CollisionService: Advanced enemy hit processing`);
     }
 
     /**
-     * ✨ NEW: Bullet hit enemy callback (Type-safe with runtime checks)
-     */
-    private onBulletHitEnemy(obj1: any, obj2: any): void {
-        // Runtime type checking for safety
-        const bullet = (obj1 as Projectile).body ? obj1 as Projectile : obj2 as Projectile;
-        const enemy = (obj1 as Enemy).rank !== undefined ? obj1 as Enemy : obj2 as Enemy;
-        
-        if (bullet && enemy && bullet.destroy && enemy.takeDamage) {
-            bullet.destroy();
-            enemy.takeDamage(1);
-            console.log(`💥 Bullet hit ${enemy.rank} enemy`);
-        }
-    }
-
-    /**
-     * ✨ NEW: Enemy hit player callback (Type-safe with runtime checks)
-     */
-    private onEnemyHitPlayer(obj1: any, obj2: any): void {
-        // Runtime type checking for safety
-        const player = (obj1 as Player).hp !== undefined ? obj1 as Player : obj2 as Player;
-        const enemy = (obj1 as Enemy).rank !== undefined ? obj1 as Enemy : obj2 as Enemy;
-        
-        if (player && enemy && player.takeDamage && enemy.rank) {
-            player.takeDamage(1, this.time.now);
-            console.log(`😵 Player hit by ${enemy.rank} enemy`);
-        }
-    }
-
-    /**
-     * ✨ NEW: Start next wave
+     * Start next wave
      */
     private startNextWave(): void {
-        // Reset wave completion flag
         this.waveCompleteNotified = false;
         
         if (this.currentWaveIndex >= DEFAULT_WAVES.length) {
@@ -152,7 +161,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Endless mode for testing
+     * Endless mode for testing
      */
     private startEndlessWave(): void {
         const endlessWave = {
@@ -169,7 +178,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Wave spawning completed
+     * Wave spawning completed
      */
     private onWaveSpawningComplete(wave: number): void {
         console.log(`📈 Wave ${wave} spawning finished. Check for remaining enemies...`);
@@ -177,26 +186,24 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Check if wave is complete (with spam prevention)
+     * Check if wave is complete (with spam prevention)
      */
     private checkWaveCompletion(): void {
         const aliveEnemies = this.enemies.countActive(true);
         
         if (aliveEnemies === 0 && !this.enemySpawner.isSpawning()) {
-            // Only notify once per wave completion
             if (!this.waveCompleteNotified) {
                 console.log("🏆 Wave cleared! Ready for next wave (Press N)");
                 this.events.emit('wave:enemies-cleared', this.currentWaveIndex);
                 this.waveCompleteNotified = true;
             }
         } else {
-            // Reset notification flag when enemies are present
             this.waveCompleteNotified = false;
         }
     }
 
     /**
-     * ✨ NEW: All enemies cleared
+     * All enemies cleared
      */
     private onWaveEnemiesCleared(wave: number): void {
         console.log(`✨ Wave ${wave} complete! Press N for next wave.`);
@@ -206,7 +213,7 @@ export default class MainScene extends Phaser.Scene {
         // Player update
         this.player.update(t, dt);
 
-        // ✨ NEW: Manual wave progression
+        // Manual wave progression
         if (Phaser.Input.Keyboard.JustDown(this.waveStartKey)) {
             if (!this.enemySpawner.isSpawning()) {
                 this.startNextWave();
@@ -221,7 +228,7 @@ export default class MainScene extends Phaser.Scene {
             enemy.pursue(this.player.getCenter(new Phaser.Math.Vector2()));
         });
 
-        // ✅ FIX: Check wave completion only every 60 frames (1 second at 60fps)
+        // Check wave completion (60 frame limit to prevent spam)
         if (this.lastWaveCheckFrame % 60 === 0) {
             if (!this.enemySpawner.isSpawning()) {
                 this.checkWaveCompletion();
@@ -231,12 +238,13 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Cleanup
+     * ✨ ENHANCED: Cleanup with CollisionService
      */
     shutdown(): void {
         this.events.off('wave:spawning-complete', this.onWaveSpawningComplete, this);
         this.events.off('wave:enemies-cleared', this.onWaveEnemiesCleared, this);
         this.enemySpawner.destroy();
-        console.log("🧹 MainScene: Cleanup complete");
+        this.collisionService.destroy(); // ✨ NEW: Clean collision service
+        console.log("🧹 MainScene: Cleanup complete (CollisionService destroyed)");
     }
 }
