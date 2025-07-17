@@ -1,74 +1,146 @@
+/**
+ * src/entities/Projectile.ts - Updated für Entity Pooling
+ * 
+ * ÄNDERUNGEN:
+ * - reset() Methode für Pool-Wiederverwendung
+ * - Cleanup von Event-Listenern
+ * - Bessere destroy() Logik
+ * - Kein Constructor-Logic in reset()
+ */
+
 import Phaser from 'phaser';
 import type { Direction } from '../gfx/TextureGenerator';
 import { ensureBulletTexture } from '../gfx/TextureGenerator';
 
-/**
- * SIMPLE projectile that definitely moves!
- */
 export default class Projectile extends Phaser.Physics.Arcade.Sprite {
   private static readonly SPEED = 300;
   private direction: Direction;
+  private autoDestroyTimer?: Phaser.Time.TimerEvent;
+  private isInitialized = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, dir: Direction) {
     ensureBulletTexture(scene);
     super(scene, x, y, 'bullet');
     
     this.direction = dir;
+    this.initializeProjectile();
+  }
+
+  /**
+   * Initialize projectile (called once in constructor)
+   */
+  private initializeProjectile(): void {
+    if (this.isInitialized) return;
     
-    // Add to scene first
-    scene.add.existing(this);
+    // Add to scene
+    this.scene.add.existing(this);
     
-    // Enable physics - USE DIFFERENT METHOD
-    scene.physics.world.enable(this);
+    // Enable physics
+    this.scene.physics.world.enable(this);
     
-    // Get body and configure
+    // Configure body
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
-      body.setSize(4, 4);  // Simple square collision
+      body.setSize(4, 4);
+    }
+    
+    this.setDepth(5);
+    this.isInitialized = true;
+  }
+
+  /**
+   * Reset projectile for pool reuse
+   */
+  public reset(x: number, y: number, direction: Direction): void {
+    // Clear old timer
+    if (this.autoDestroyTimer) {
+      this.autoDestroyTimer.destroy();
+      this.autoDestroyTimer = undefined;
+    }
+    
+    // Reset position and direction
+    this.x = x;
+    this.y = y;
+    this.direction = direction;
+    
+    // Reset physics
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.enable = true;
       
-      // Set velocity immediately  
-      switch (dir) {
+      // Set velocity based on direction
+      switch (direction) {
         case 'left':
-          body.velocity.x = -Projectile.SPEED;
-          body.velocity.y = 0;
+          body.setVelocity(-Projectile.SPEED, 0);
           break;
         case 'right':
-          body.velocity.x = Projectile.SPEED;
-          body.velocity.y = 0;
+          body.setVelocity(Projectile.SPEED, 0);
           break;
         case 'up':
-          body.velocity.x = 0;
-          body.velocity.y = -Projectile.SPEED;
+          body.setVelocity(0, -Projectile.SPEED);
           break;
         case 'down':
         default:
-          body.velocity.x = 0;
-          body.velocity.y = Projectile.SPEED;
+          body.setVelocity(0, Projectile.SPEED);
           break;
       }
-      
-      console.log(`🚀 SIMPLE Projectile: ${dir} at (${x},${y}) vel(${body.velocity.x},${body.velocity.y})`);
     }
-
-    this.setDepth(5);
     
-    // Auto-destroy after 3 seconds (fallback)
-    scene.time.delayedCall(3000, () => {
-      if (this.active) {
-        console.log('🗑️ Projectile auto-destroyed after 3s');
-        this.destroy();
-      }
+    // Reset visual state
+    this.setTint(0xffffff);
+    this.setAlpha(1);
+    
+    // Setup auto-destroy timer
+    this.autoDestroyTimer = this.scene.time.delayedCall(3000, () => {
+      this.returnToPool();
     });
+    
+    console.log(`🚀 Projectile reset: ${direction} at (${x},${y})`);
   }
 
-  // Force update position (if physics fails)
+  /**
+   * Manual destroy override for pool return
+   */
+  public override destroy(fromScene?: boolean): void {
+    this.returnToPool();
+  }
+
+  /**
+   * Return to pool instead of destroying
+   */
+  private returnToPool(): void {
+    if (!this.active) return; // Already returned
+    
+    // Clear timer
+    if (this.autoDestroyTimer) {
+      this.autoDestroyTimer.destroy();
+      this.autoDestroyTimer = undefined;
+    }
+    
+    // Disable physics
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.enable = false;
+      body.setVelocity(0, 0);
+    }
+    
+    // Notify pool system to return this projectile
+    this.scene.events.emit('projectile:return', this);
+    
+    console.log('🔄 Projectile returned to pool');
+  }
+
+  /**
+   * Check if projectile is off-screen
+   */
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    
+    if (!this.active) return;
     
     // Manual fallback movement if physics fails
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (!body || (body.velocity.x === 0 && body.velocity.y === 0)) {
-      // Move manually
       const speed = Projectile.SPEED * (delta / 1000);
       switch (this.direction) {
         case 'left': this.x -= speed; break;
@@ -78,10 +150,29 @@ export default class Projectile extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
-    // Destroy if off-screen
+    // Return to pool if off-screen
     if (this.x < -50 || this.x > this.scene.scale.width + 50 || 
         this.y < -50 || this.y > this.scene.scale.height + 50) {
-      this.destroy();
+      this.returnToPool();
     }
+  }
+
+  /**
+   * Actual destruction (only called when scene ends)
+   */
+  public actualDestroy(): void {
+    if (this.autoDestroyTimer) {
+      this.autoDestroyTimer.destroy();
+      this.autoDestroyTimer = undefined;
+    }
+    
+    super.destroy();
+  }
+
+  /**
+   * Get current direction
+   */
+  public getDirection(): Direction {
+    return this.direction;
   }
 }
