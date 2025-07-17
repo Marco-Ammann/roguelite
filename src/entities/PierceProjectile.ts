@@ -91,7 +91,6 @@ export default class PierceProjectile extends Projectile {
    * @returns true if projectile should be destroyed, false to continue
    */
   public onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
-    // Get enemy identifier - prefer unique ID, fallback to name or position
     const enemyId = this.getEnemyIdentifier(enemy);
     
     // Frame-gate: prevent multiple hits per enemy per frame
@@ -104,9 +103,7 @@ export default class PierceProjectile extends Projectile {
       this.hitEnemies.add(enemyId);
       this.currentPierceCount += 1;
       
-      console.info(
-        `⚡ Pierce hit ${this.currentPierceCount}/${this.maxPierceCount} (enemy: ${enemyId})`
-      );
+      console.log(`⚡ Pierce hit ${this.currentPierceCount}/${this.maxPierceCount} (enemy: ${enemyId})`);
       
       // Visual feedback for successful hit
       this.addHitEffect();
@@ -116,7 +113,7 @@ export default class PierceProjectile extends Projectile {
     const shouldDestroy = this.currentPierceCount >= this.maxPierceCount;
     
     if (shouldDestroy) {
-      console.info(`⚡ Pierce projectile exhausted - hit ${this.currentPierceCount} enemies`);
+      console.log(`⚡ Pierce projectile exhausted - hit ${this.currentPierceCount} enemies`);
     }
     
     return shouldDestroy;
@@ -155,8 +152,8 @@ export default class PierceProjectile extends Projectile {
     const currentFrame = this.scene.game.loop.frame;
     const lastFrame = this.hitGate.get(enemyId);
     
-    // Block if hit in last 5 frames (not just current frame)
-    if (lastFrame && currentFrame - lastFrame < 5) {
+    // Block if hit in last 10 frames (not just current frame)
+    if (lastFrame && currentFrame - lastFrame < 10) {
       return false;
     }
     

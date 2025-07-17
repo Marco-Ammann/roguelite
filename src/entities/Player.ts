@@ -540,25 +540,27 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * Cleanup player resources when destroyed
      */
     public override destroy(): void {
-        // Remove event listeners
-        this.scene.events.off('weapon:switched', this.onWeaponSwitched, this);
+        // Safe event cleanup - check if scene exists
+        if (this.scene && this.scene.events) {
+          this.scene.events.off('weapon:switched', this.onWeaponSwitched, this);
+        }
         
-        // Cleanup weapon system
+        // Safe weapon system cleanup
         if (this.weaponSystem) {
-            this.weaponSystem.destroy();
+          this.weaponSystem.destroy();
         }
         
-        // Cleanup UI
-        if (this.healthBar) {
-            this.healthBar.destroy();
+        // Safe UI cleanup
+        if (this.healthBar && this.healthBar.scene) {
+          this.healthBar.destroy();
         }
         
-        // Kill any running tweens
-        this.scene.tweens.killTweensOf(this);
+        // Kill tweens safely
+        if (this.scene && this.scene.tweens) {
+          this.scene.tweens.killTweensOf(this);
+        }
         
         Logger.info('🧹 Player: Cleanup complete');
-        
-        // Call parent destroy
         super.destroy();
-    }
+      }
 }

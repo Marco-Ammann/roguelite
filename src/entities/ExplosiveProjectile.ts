@@ -152,24 +152,16 @@ export default class ExplosiveProjectile extends Projectile {
    * Trigger explosion - damages all enemies within radius and creates VFX
    */
   private explode(): void {
-    // Disable physics body to prevent further collisions
+    console.log(`💥 EXPLODING at (${this.x}, ${this.y})`); // Debug log
+    
+    // Disable physics first
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
       body.enable = false;
     }
-
-    // Find all enemies within explosion radius using Phaser's physics
+    
     this.damageEnemiesInRadius();
-
-    // Create visual explosion effect
     this.createExplosionVfx();
-
-    // Play explosion sound effect (if audio system exists)
-    this.scene.events.emit("audio:play", "explosion", { volume: 0.3 });
-
-    console.info(
-      `💥 Explosion complete: ${this.damagedEnemies.size} enemies damaged (radius ${this.explosionRadius}px)`
-    );
   }
 
   /**
@@ -243,21 +235,25 @@ export default class ExplosiveProjectile extends Projectile {
    * Creates expanding circle animation with color gradient
    */
   private createExplosionVfx(): void {
+    console.log(`💥 Creating explosion VFX at (${this.x}, ${this.y})`); // Debug
+    
     this.explosionVfx = this.scene.add.graphics();
-    this.explosionVfx.setDepth(100); // Higher depth to be visible
-
-    // Immediate large explosion
-    this.explosionVfx.fillStyle(0xff6600, 0.8);
+    this.explosionVfx.setDepth(200); // Very high depth
+    
+    // Large orange circle
+    this.explosionVfx.fillStyle(0xff6600, 0.9);
     this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius);
-
-    this.explosionVfx.fillStyle(0xffff00, 0.6);
-    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.7);
-
-    this.explosionVfx.fillStyle(0xffffff, 0.8);
-    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.4);
-
-    // Remove after 500ms
-    this.scene.time.delayedCall(500, () => {
+    
+    // Yellow inner circle  
+    this.explosionVfx.fillStyle(0xffff00, 0.7);
+    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.6);
+    
+    // White core
+    this.explosionVfx.fillStyle(0xffffff, 0.9);
+    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.3);
+    
+    // Auto-cleanup
+    this.scene.time.delayedCall(800, () => {
       if (this.explosionVfx) {
         this.explosionVfx.destroy();
         this.explosionVfx = undefined;

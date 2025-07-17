@@ -188,23 +188,24 @@ export const DEFAULT_WAVES: WaveConfig[] = [
   {
     wave: 1,
     enemies: [
-      { count: 5, rank: EnemyRank.Standard }, // mehr enemies
-    ],
-    delay: 800,
-  },
-  {
-    wave: 2,
-    enemies: [
-      { count: 7, rank: EnemyRank.Standard },
-      { count: 2, rank: EnemyRank.Elite },
+      { count: 8, rank: EnemyRank.Standard },
     ],
     delay: 600,
   },
   {
+    wave: 2,
+    enemies: [
+      { count: 12, rank: EnemyRank.Standard },
+      { count: 3, rank: EnemyRank.Elite },
+    ],
+    delay: 500,
+  },
+  {
     wave: 3,
     enemies: [
-      { count: 10, rank: EnemyRank.Standard },
-      { count: 3, rank: EnemyRank.Elite },
+      { count: 15, rank: EnemyRank.Standard },
+      { count: 5, rank: EnemyRank.Elite },
+      { count: 1, rank: EnemyRank.Boss },
     ],
     delay: 400,
   },
