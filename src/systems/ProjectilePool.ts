@@ -259,10 +259,18 @@ export default class ProjectilePool {
    * Emergency cleanup - return all active projectiles
    */
   public emergencyCleanup(): void {
-    this.projectileGroup.children.entries.forEach((child) => {
-      this.returnProjectile(child);
+    Logger.warn('ProjectilePool: Emergency cleanup triggered');
+    
+    // Safe cleanup - check if projectiles still exist
+    const activeProjectiles = this.projectileGroup.children.entries.slice(); // Copy array
+    
+    activeProjectiles.forEach((child) => {
+      if (child && child.active) {
+        this.returnProjectile(child);
+      }
     });
-    Logger.info("ProjectilePool: Emergency cleanup completed");
+    
+    Logger.info('ProjectilePool: Emergency cleanup completed');
   }
 
   /**

@@ -93,28 +93,21 @@ export default class PierceProjectile extends Projectile {
   public onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
     const enemyId = this.getEnemyIdentifier(enemy);
     
-    // Frame-gate: prevent multiple hits per enemy per frame
-    if (!this.shouldProcessHit(enemyId)) {
-      return false; // Ignore duplicate hit in same frame
+    // Simple check: if already hit this enemy, ignore
+    if (this.hitEnemies.has(enemyId)) {
+      console.log(`⚡ Pierce: Already hit enemy ${enemyId} - ignoring`);
+      return false; // Don't destroy, continue piercing
     }
     
-    // Track unique enemy hit
-    if (!this.hitEnemies.has(enemyId)) {
-      this.hitEnemies.add(enemyId);
-      this.currentPierceCount += 1;
-      
-      console.log(`⚡ Pierce hit ${this.currentPierceCount}/${this.maxPierceCount} (enemy: ${enemyId})`);
-      
-      // Visual feedback for successful hit
-      this.addHitEffect();
-    }
+    // New enemy hit - count it
+    this.hitEnemies.add(enemyId);
+    this.currentPierceCount++;
     
-    // Check if projectile should be destroyed after hitting max enemies
+    console.log(`⚡ Pierce: Hit enemy ${enemyId} (${this.currentPierceCount}/${this.maxPierceCount})`);
+    
+    // Destroy only when max hits reached
     const shouldDestroy = this.currentPierceCount >= this.maxPierceCount;
-    
-    if (shouldDestroy) {
-      console.log(`⚡ Pierce projectile exhausted - hit ${this.currentPierceCount} enemies`);
-    }
+    console.log(`⚡ Pierce: Should destroy = ${shouldDestroy}`);
     
     return shouldDestroy;
   }
