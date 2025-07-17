@@ -8,9 +8,9 @@ import type {
   ICollisionService, 
   CollisionGroups, 
   CollisionCallbacks,
-  CollisionEventData,
-  DamageType 
+  CollisionEventData 
 } from '../interfaces/ICollisionSystem';
+import { DamageType } from '../interfaces/ICollisionSystem';
 import type Player from '../entities/Player';
 import type Enemy from '../entities/Enemy';
 import type Projectile from '../entities/Projectile';
