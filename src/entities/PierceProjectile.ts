@@ -28,7 +28,7 @@ export default class PierceProjectile extends Projectile {
    */
   onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
     const enemySprite = enemy as any; // Cast to access enemyId
-    const enemyId = enemySprite.enemyId || `fallback_${enemy.x}_${enemy.y}`;
+    const enemyId = enemySprite.enemyId || `fallback_${(enemy as Phaser.GameObjects.Sprite).x}_${(enemy as Phaser.GameObjects.Sprite).y}`;
     
     // Skip if already hit this enemy
     if (this.hitEnemies.has(enemyId)) {

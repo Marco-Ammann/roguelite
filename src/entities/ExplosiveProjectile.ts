@@ -25,7 +25,7 @@ export default class ExplosiveProjectile extends Projectile {
    * Called by CollisionService when hitting enemy
    * Returns true if projectile should be destroyed
    */
-  onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
+  onHitEnemy(_enemy: Phaser.GameObjects.GameObject): boolean {
     if (this.hasExploded) return true;
     
     this.hasExploded = true;
@@ -53,9 +53,10 @@ export default class ExplosiveProjectile extends Projectile {
 
     let hitCount = 0;
     enemies.forEach(enemy => {
+      const sprite = enemy as Phaser.GameObjects.Sprite;
       const distance = Phaser.Math.Distance.Between(
         explosionCenter.x, explosionCenter.y,
-        enemy.x, enemy.y
+        sprite.x, sprite.y
       );
       
       if (distance <= this.explosionRadius) {

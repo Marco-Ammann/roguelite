@@ -68,7 +68,6 @@ export class WeaponSystem {
    * Create projectile based on current weapon
    */
   createProjectile(x: number, y: number, direction: Direction): Phaser.GameObjects.GameObject {
-    const config = this.weapons.get(this.currentWeapon)!;
     let projectile: Phaser.GameObjects.GameObject;
 
     switch (this.currentWeapon) {
