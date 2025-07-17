@@ -187,12 +187,16 @@ export class CollisionService implements ICollisionService {
    * @param enemy - Enemy that was hit
    */
   private processProjectileCollision(projectile: any, enemy: any): void {
-    // Determine projectile type and handle accordingly
+    // *** ADD FRAME-GATE HERE ***
+    const collisionKey = this.generateCollisionKey(projectile, enemy);
+    if (!this.shouldProcessCollision(collisionKey)) {
+      return; // Exit early - collision already processed this frame
+    }
+
     let shouldDestroy = true;
-    let damageType: DamageType = DamageType.Normal; // Add explicit type annotation
+    let damageType: DamageType = DamageType.Normal;
     let damage = 1;
 
-    // Type-specific collision handling
     if (this.isPierceProjectile(projectile)) {
       shouldDestroy = this.handlePierceProjectileHit(projectile, enemy);
       damageType = DamageType.Pierce;
@@ -212,7 +216,12 @@ export class CollisionService implements ICollisionService {
       enemy.takeDamage(damage);
     }
 
-    // Create collision event
+    // *** ONLY DESTROY IF PROJECTILE SAYS SO ***
+    if (shouldDestroy) {
+      this.destroyProjectile(projectile);
+    }
+
+    // Create collision event and trigger callbacks
     const eventData = this.createCollisionEvent(
       projectile,
       enemy,
@@ -220,16 +229,7 @@ export class CollisionService implements ICollisionService {
       damage,
       this.scene.time.now
     );
-
-    // Update statistics
     this.updateCollisionStats(damageType);
-
-    // Handle projectile destruction
-    if (shouldDestroy) {
-      this.destroyProjectile(projectile);
-    }
-
-    // Trigger callbacks and events
     this.triggerCollisionCallbacks(eventData);
   }
 
@@ -251,10 +251,13 @@ export class CollisionService implements ICollisionService {
    * @param enemy - Enemy that was hit
    * @returns true if projectile should be destroyed
    */
-  private handlePierceProjectileHit(projectile: PierceProjectile, enemy: any): boolean {
+  private handlePierceProjectileHit(
+    projectile: PierceProjectile,
+    enemy: any
+  ): boolean {
     const shouldDestroy = projectile.onHitEnemy(enemy);
     Logger.info(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
-    
+
     // RESPECT the pierce projectile's decision!
     return shouldDestroy; // Don't force destroy!
   }
