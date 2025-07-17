@@ -1,55 +1,54 @@
-import Phaser from 'phaser';
-import type { IDamageable } from '../interfaces/IDamageable';
-
 /**
- * Simple rectangular health bar that tracks a damageable target.
+ * src/ui/HealthBar.ts
+ * ------------------------------------------------------------
+ * Lightweight, pooled health bar.  Uses two Graphics objects
+ * from {@link GraphicsPool} — zero allocations after first draw.
  */
-export default class HealthBar extends Phaser.GameObjects.Graphics {
-  private target: Phaser.GameObjects.Sprite & IDamageable;
-  private readonly width: number;
-  private readonly height: number;
+
+import Phaser from 'phaser';
+import GraphicsPool from '../systems/GraphicsPool';
+
+export default class HealthBar extends Phaser.GameObjects.Container {
+  private readonly bg: Phaser.GameObjects.Graphics;
+  private readonly fg: Phaser.GameObjects.Graphics;
+  private readonly maxWidth: number;
 
   constructor(
     scene: Phaser.Scene,
-    target: Phaser.GameObjects.Sprite & IDamageable,
-    width = 16,
-    height = 3,
+    x: number,
+    y: number,
+    width = 40,
+    height = 6,
   ) {
-    super(scene);
-    this.target = target;
-    this.width = width;
-    this.height = height;
-
-    this.setDepth(10);
+    super(scene, x, y);
     scene.add.existing(this);
 
-    // Update each frame
-    scene.events.on('postupdate', this.updateBar, this);
+    this.maxWidth = width;
+
+    this.bg = GraphicsPool.acquire(scene);
+    this.fg = GraphicsPool.acquire(scene);
+
+    this.add([this.bg, this.fg]);
+    this.drawBackground(width, height);
+    this.setDepth(500);
   }
 
-  private updateBar() {
-    if (!this.scene) return;
+  /** Redraw background once – no per‑frame cost. */
+  private drawBackground(w: number, h: number): void {
+    this.bg.fillStyle(0x000000, 0.6).fillRect(-w / 2, -h / 2, w, h);
+  }
 
-    // Position above the target
-    const x = this.target.x - this.width / 2;
-    const y = this.target.y - this.target.height / 2 - this.height - 2;
-
-    this.clear();
-
-    const pct = Phaser.Math.Clamp(this.target.hp / this.target.maxHp, 0, 1);
-
-    // background
-    this.fillStyle(0x000000, 0.6);
-    this.fillRect(x, y, this.width, this.height);
-
-    // health
-    this.fillStyle(0xff5252, 1);
-    this.fillRect(x + 1, y + 1, (this.width - 2) * pct, this.height - 2);
+  /** Update bar fill (0 → 1). */
+  public setPercent(p: number): void {
+    const clamped = Phaser.Math.Clamp(p, 0, 1);
+    this.fg.clear()
+      .fillStyle(0xe53935)
+      .fillRect(-this.maxWidth / 2, -2, this.maxWidth * clamped, 4);
   }
 
   override destroy(fromScene?: boolean): void {
-    // Clean up listener
-    this.scene?.events.off('postupdate', this.updateBar, this);
+    GraphicsPool.release(this.bg);
+    GraphicsPool.release(this.fg);
     super.destroy(fromScene);
   }
 }
