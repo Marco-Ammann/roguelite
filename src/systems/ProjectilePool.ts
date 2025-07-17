@@ -89,14 +89,12 @@ export default class ProjectilePool {
   /**
    * Get projectile from pool (main API)
    */
-  public getProjectile(
-    type: WeaponType,
-    x: number,
-    y: number,
-    direction: Direction
-  ): Phaser.GameObjects.GameObject {
-    let projectile: Phaser.GameObjects.GameObject;
-
+/**
+ * Get projectile from pool (main API)
+ */
+public getProjectile(type: WeaponType, x: number, y: number, direction: Direction): Phaser.GameObjects.GameObject {
+    let projectile: Phaser.Physics.Arcade.Sprite;
+    
     switch (type) {
       case WeaponType.Pierce:
         projectile = this.getPierceProjectile();
@@ -111,15 +109,15 @@ export default class ProjectilePool {
         this.stats.active.normal++;
         break;
     }
-
+    
     // Reset position und direction
     (projectile as any).reset(x, y, direction);
     projectile.setActive(true);
-    projectile.setVisible(true);
-
+    projectile.setVisible(true);  // Jetzt funktioniert es!
+    
     // Add to Phaser group
     this.projectileGroup.add(projectile);
-
+    
     return projectile;
   }
 
