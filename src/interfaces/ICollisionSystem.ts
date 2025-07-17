@@ -1,27 +1,31 @@
 /**
- * Type-safe Collision System Interfaces
  * src/interfaces/ICollisionSystem.ts
+ * Type-safe collision system interfaces and contracts
  */
 
 import type Phaser from 'phaser';
 
-// Damage Types
-export enum DamageType {
-  Normal = 'normal',     // Standard damage
-  Pierce = 'pierce',     // Through damage (multiple enemies)
-  Explosive = 'explosive', // Area of Effect damage  
-  DoT = 'dot'           // Damage over Time
-}
+// Damage Types for Phase 2.2
+export const DamageType = {
+  Normal: 'normal',      // Standard damage
+  Pierce: 'pierce',      // Durchschuss (multiple enemies)
+  Explosive: 'explosive', // AOE damage  
+  DoT: 'dot'            // Damage over Time
+} as const;
 
-// Effect Types
-export enum EffectType {
-  Knockback = 'knockback',
-  Slow = 'slow',
-  Burn = 'burn',
-  Freeze = 'freeze',
-}
+export type DamageType = typeof DamageType[keyof typeof DamageType];
 
-// Collision Event Data
+// Effect Types for Phase 2.3
+export const EffectType = {
+  Knockback: 'knockback',
+  Slow: 'slow',
+  Burn: 'burn',
+  Freeze: 'freeze',
+} as const;
+
+export type EffectType = typeof EffectType[keyof typeof EffectType];
+
+// ✨ NEW: Collision Event Data
 export interface CollisionEventData {
   attacker: Phaser.GameObjects.GameObject;
   target: Phaser.GameObjects.GameObject;
@@ -32,7 +36,7 @@ export interface CollisionEventData {
   timestamp: number;
 }
 
-// Type-safe Collision Callbacks
+// ✨ NEW: Type-safe Collision Callbacks
 export interface CollisionCallbacks {
   onProjectileHitEnemy?: (eventData: CollisionEventData) => void;
   onEnemyHitPlayer?: (eventData: CollisionEventData) => void;
@@ -40,7 +44,7 @@ export interface CollisionCallbacks {
   onEffectApplied?: (eventData: CollisionEventData) => void;
 }
 
-// Collision Groups Definition
+// ✨ NEW: Collision Groups Definition
 export interface CollisionGroups {
   player: Phaser.Physics.Arcade.Sprite;
   enemies: Phaser.Physics.Arcade.Group;
@@ -48,7 +52,7 @@ export interface CollisionGroups {
   effects?: Phaser.Physics.Arcade.Group; // Future: Effect particles
 }
 
-// CollisionService Contract
+// ✨ NEW: CollisionService Contract
 export interface ICollisionService {
   initialize(groups: CollisionGroups, callbacks: CollisionCallbacks): void;
   destroy(): void;

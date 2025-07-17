@@ -1,6 +1,6 @@
 /**
  * CollisionService - Modular Collision Management
- * src/services/CollisionService.ts
+ * ADHD-friendly: Single responsibility, short methods
  */
 
 import Phaser from 'phaser';
@@ -80,7 +80,7 @@ export class CollisionService implements ICollisionService {
     const eventData = this.createCollisionEvent(
       projectile,
       enemy,
-      'normal', // Default damage type for Phase 1 compatibility
+      DamageType.Normal, // Fixed: Use enum value
       1,        // Default damage for Phase 1 compatibility
       this.scene.time.now
     );
@@ -103,7 +103,7 @@ export class CollisionService implements ICollisionService {
     const eventData = this.createCollisionEvent(
       enemy,
       player,
-      'normal', // Default damage type
+      DamageType.Normal, // Fixed: Use enum value
       1,        // Default damage
       this.scene.time.now
     );

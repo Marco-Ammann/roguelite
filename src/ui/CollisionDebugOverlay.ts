@@ -1,6 +1,6 @@
 /**
- * CollisionDebugOverlay - Visual verification that CollisionService works
- * /src/ui/CollisionDebugOverlay.ts
+ * src/ui/CollisionDebugOverlay.ts
+ * Visual debug overlay for CollisionService statistics and real-time feedback
  */
 
 import Phaser from 'phaser';
@@ -25,27 +25,22 @@ export default class CollisionDebugOverlay extends Phaser.GameObjects.Text {
     this.collisionService = collisionService;
     scene.add.existing(this).setScrollFactor(0).setDepth(1001);
 
-    // Toggle F2 (F1 is already used by main debug)
     this.toggleKey = scene.input.keyboard!.addKey('F2');
-    this.setVisible(false); // Hidden by default
+    this.setVisible(false);
 
-    // Listen to collision events for immediate feedback
     scene.events.on('collision:projectile-enemy', this.onProjectileHit, this);
     scene.events.on('collision:enemy-player', this.onPlayerHit, this);
-
     scene.events.on('postupdate', this.updateStats, this);
+    
     Logger.info('CollisionDebugOverlay: Initialized (Press F2 to toggle)');
   }
 
-  /**
-   * Real-time collision event feedback
-   */
-  private onProjectileHit(eventData: any): void {
-    this.flashEffect('#00ff00'); // Green flash for projectile hits
+  private onProjectileHit(_eventData: any): void {
+    this.flashEffect('#00ff00');
   }
 
-  private onPlayerHit(eventData: any): void {
-    this.flashEffect('#ff0000'); // Red flash for player hits
+  private onPlayerHit(_eventData: any): void {
+    this.flashEffect('#ff0000');
   }
 
   /**

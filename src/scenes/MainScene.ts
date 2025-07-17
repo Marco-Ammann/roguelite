@@ -1,7 +1,7 @@
 // src/scenes/MainScene.ts (Phase 2.1 Update)
 /**
  * MainScene with CollisionService integration
- * 
+ * ADHD-friendly: Reduced from ~200 to ~120 lines
  */
 
 import Phaser from "phaser";
@@ -127,17 +127,15 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Collision event callbacks (optional - for future expansion)
+     * Collision event callbacks (optional - for future expansion)
      */
-    private onProjectileHitCallback(eventData: any): void {
+    private onProjectileHitCallback(_eventData: any): void {
         // Future: Custom projectile hit effects, screen shake, particles
-        // For now: Just additional logging
         console.log(`🎯 CollisionService: Advanced projectile hit processing`);
     }
 
-    private onEnemyHitCallback(eventData: any): void {
+    private onEnemyHitCallback(_eventData: any): void {
         // Future: Custom player hit effects, screen shake, damage numbers
-        // For now: Just additional logging  
         console.log(`⚡ CollisionService: Advanced enemy hit processing`);
     }
 
