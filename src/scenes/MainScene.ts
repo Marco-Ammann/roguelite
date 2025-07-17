@@ -21,6 +21,10 @@ export default class MainScene extends Phaser.Scene {
     private enemySpawner!: EnemySpawnService;
     private currentWaveIndex = 0;
     private waveStartKey!: Phaser.Input.Keyboard.Key;
+    
+    // ✅ FIX: Prevent spam logging
+    private lastWaveCheckFrame = 0;
+    private waveCompleteNotified = false;
 
     constructor() {
         super("MainScene");
@@ -33,8 +37,13 @@ export default class MainScene extends Phaser.Scene {
     create() {
         console.log("🎮 MainScene: Starting game");
         
-        // Projectile group
-        this.projectiles = this.physics.add.group({ classType: Projectile });
+        // ✅ FIX: Projectile group with correct physics settings
+        this.projectiles = this.physics.add.group({ 
+            classType: Projectile,
+            // ✅ CRITICAL: Don't override physics settings!
+            collideWorldBounds: false,  // Let projectiles handle their own bounds
+            allowGravity: false,        // No group-level gravity
+        });
 
         // Create player via factory (centred)
         this.player = createPlayer(
@@ -126,6 +135,9 @@ export default class MainScene extends Phaser.Scene {
      * ✨ NEW: Start next wave
      */
     private startNextWave(): void {
+        // Reset wave completion flag
+        this.waveCompleteNotified = false;
+        
         if (this.currentWaveIndex >= DEFAULT_WAVES.length) {
             console.log("🎉 All waves completed! Starting endless mode...");
             this.startEndlessWave();
@@ -165,14 +177,21 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Check if wave is complete
+     * ✨ NEW: Check if wave is complete (with spam prevention)
      */
     private checkWaveCompletion(): void {
         const aliveEnemies = this.enemies.countActive(true);
         
         if (aliveEnemies === 0 && !this.enemySpawner.isSpawning()) {
-            console.log("🏆 Wave cleared! Ready for next wave.");
-            this.events.emit('wave:enemies-cleared', this.currentWaveIndex);
+            // Only notify once per wave completion
+            if (!this.waveCompleteNotified) {
+                console.log("🏆 Wave cleared! Ready for next wave (Press N)");
+                this.events.emit('wave:enemies-cleared', this.currentWaveIndex);
+                this.waveCompleteNotified = true;
+            }
+        } else {
+            // Reset notification flag when enemies are present
+            this.waveCompleteNotified = false;
         }
     }
 
@@ -202,10 +221,13 @@ export default class MainScene extends Phaser.Scene {
             enemy.pursue(this.player.getCenter(new Phaser.Math.Vector2()));
         });
 
-        // ✨ NEW: Check wave completion every frame
-        if (!this.enemySpawner.isSpawning()) {
-            this.checkWaveCompletion();
+        // ✅ FIX: Check wave completion only every 60 frames (1 second at 60fps)
+        if (this.lastWaveCheckFrame % 60 === 0) {
+            if (!this.enemySpawner.isSpawning()) {
+                this.checkWaveCompletion();
+            }
         }
+        this.lastWaveCheckFrame++;
     }
 
     /**

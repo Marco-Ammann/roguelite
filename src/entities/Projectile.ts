@@ -3,45 +3,85 @@ import type { Direction } from '../gfx/TextureGenerator';
 import { ensureBulletTexture } from '../gfx/TextureGenerator';
 
 /**
- * Simple projectile fired by the player. Flies straight and destroys itself
- * on impact or when leaving the world bounds.
+ * SIMPLE projectile that definitely moves!
  */
 export default class Projectile extends Phaser.Physics.Arcade.Sprite {
   private static readonly SPEED = 300;
+  private direction: Direction;
 
   constructor(scene: Phaser.Scene, x: number, y: number, dir: Direction) {
     ensureBulletTexture(scene);
     super(scene, x, y, 'bullet');
+    
+    this.direction = dir;
+    
+    // Add to scene first
     scene.add.existing(this);
-    scene.physics.add.existing(this);
-
+    
+    // Enable physics - USE DIFFERENT METHOD
+    scene.physics.world.enable(this);
+    
+    // Get body and configure
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setAllowGravity(false);
-    body.setCircle(2);
-
-    switch (dir) {
-      case 'left':
-        this.setVelocity(-Projectile.SPEED, 0);
-        break;
-      case 'right':
-        this.setVelocity(Projectile.SPEED, 0);
-        break;
-      case 'up':
-        this.setVelocity(0, -Projectile.SPEED);
-        break;
-      case 'down':
-      default:
-        this.setVelocity(0, Projectile.SPEED);
-        break;
+    if (body) {
+      body.setSize(4, 4);  // Simple square collision
+      
+      // Set velocity immediately  
+      switch (dir) {
+        case 'left':
+          body.velocity.x = -Projectile.SPEED;
+          body.velocity.y = 0;
+          break;
+        case 'right':
+          body.velocity.x = Projectile.SPEED;
+          body.velocity.y = 0;
+          break;
+        case 'up':
+          body.velocity.x = 0;
+          body.velocity.y = -Projectile.SPEED;
+          break;
+        case 'down':
+        default:
+          body.velocity.x = 0;
+          body.velocity.y = Projectile.SPEED;
+          break;
+      }
+      
+      console.log(`🚀 SIMPLE Projectile: ${dir} at (${x},${y}) vel(${body.velocity.x},${body.velocity.y})`);
     }
 
     this.setDepth(5);
-
-    // Destroy when leaving world
-    this.setCollideWorldBounds(true);
-    scene.physics.world.on('worldbounds', (b: Phaser.Physics.Arcade.Body) => {
-      if (b.gameObject === this) this.destroy();
+    
+    // Auto-destroy after 3 seconds (fallback)
+    scene.time.delayedCall(3000, () => {
+      if (this.active) {
+        console.log('🗑️ Projectile auto-destroyed after 3s');
+        this.destroy();
+      }
     });
-    body.onWorldBounds = true;
+  }
+
+  // Force update position (if physics fails)
+  preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
+    
+    // Manual fallback movement if physics fails
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body || (body.velocity.x === 0 && body.velocity.y === 0)) {
+      // Move manually
+      const speed = Projectile.SPEED * (delta / 1000);
+      switch (this.direction) {
+        case 'left': this.x -= speed; break;
+        case 'right': this.x += speed; break;
+        case 'up': this.y -= speed; break;
+        case 'down': this.y += speed; break;
+      }
+    }
+
+    // Destroy if off-screen
+    if (this.x < -50 || this.x > this.scene.scale.width + 50 || 
+        this.y < -50 || this.y > this.scene.scale.height + 50) {
+      this.destroy();
+    }
   }
 }
