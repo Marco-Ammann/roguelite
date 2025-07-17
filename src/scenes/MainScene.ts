@@ -78,7 +78,7 @@ export default class MainScene extends Phaser.Scene {
         this.physics.add.overlap(
             this.projectiles,
             this.enemies,
-            this.onBulletHitEnemy,
+            (obj1, obj2) => this.onBulletHitEnemy(obj1, obj2),
             undefined,
             this
         );
@@ -87,40 +87,39 @@ export default class MainScene extends Phaser.Scene {
         this.physics.add.overlap(
             this.player,
             this.enemies,
-            this.onEnemyHitPlayer,
+            (obj1, obj2) => this.onEnemyHitPlayer(obj1, obj2),
             undefined,
             this
         );
     }
 
     /**
-     * ✨ NEW: Bullet hit enemy callback (Type-safe)
+     * ✨ NEW: Bullet hit enemy callback (Type-safe with runtime checks)
      */
-    private onBulletHitEnemy(
-        bulletObj: Phaser.Types.Physics.Arcade.GameObjectWithBody, 
-        enemyObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
-    ): void {
-        const projectile = bulletObj as Projectile;
-        const enemyEntity = enemyObj as Enemy;
+    private onBulletHitEnemy(obj1: any, obj2: any): void {
+        // Runtime type checking for safety
+        const bullet = (obj1 as Projectile).body ? obj1 as Projectile : obj2 as Projectile;
+        const enemy = (obj1 as Enemy).rank !== undefined ? obj1 as Enemy : obj2 as Enemy;
         
-        projectile.destroy();
-        enemyEntity.takeDamage(1);
-        
-        console.log(`💥 Bullet hit ${enemyEntity.rank} enemy`);
+        if (bullet && enemy && bullet.destroy && enemy.takeDamage) {
+            bullet.destroy();
+            enemy.takeDamage(1);
+            console.log(`💥 Bullet hit ${enemy.rank} enemy`);
+        }
     }
 
     /**
-     * ✨ NEW: Enemy hit player callback (Type-safe)
+     * ✨ NEW: Enemy hit player callback (Type-safe with runtime checks)
      */
-    private onEnemyHitPlayer(
-        playerObj: Phaser.Types.Physics.Arcade.GameObjectWithBody, 
-        enemyObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
-    ): void {
-        const playerEntity = playerObj as Player;
-        const enemyEntity = enemyObj as Enemy;
+    private onEnemyHitPlayer(obj1: any, obj2: any): void {
+        // Runtime type checking for safety
+        const player = (obj1 as Player).hp !== undefined ? obj1 as Player : obj2 as Player;
+        const enemy = (obj1 as Enemy).rank !== undefined ? obj1 as Enemy : obj2 as Enemy;
         
-        playerEntity.takeDamage(1, this.time.now);
-        console.log(`😵 Player hit by ${enemyEntity.rank} enemy`);
+        if (player && enemy && player.takeDamage && enemy.rank) {
+            player.takeDamage(1, this.time.now);
+            console.log(`😵 Player hit by ${enemy.rank} enemy`);
+        }
     }
 
     /**
