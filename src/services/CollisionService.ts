@@ -1,6 +1,5 @@
 /**
  * CollisionService - Modular Collision Management
- * ADHD-friendly: Single responsibility, short methods
  */
 
 import Phaser from 'phaser';

@@ -27,7 +27,8 @@ export default class PierceProjectile extends Projectile {
    * Returns true if projectile should be destroyed
    */
   onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
-    const enemyId = enemy.name || `enemy_${enemy.x}_${enemy.y}`;
+    const sprite = enemy as Phaser.GameObjects.Sprite;
+    const enemyId = enemy.name || `enemy_${sprite.x}_${sprite.y}`;
     
     // Skip if already hit this enemy
     if (this.hitEnemies.has(enemyId)) {

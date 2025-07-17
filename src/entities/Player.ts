@@ -71,23 +71,29 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
       this.setVelocity(0, 0);
     }
 
-    // Shooting input - simplified and reliable
+    // Weapon switching
+    if (Phaser.Input.Keyboard.JustDown(this.weaponSwitchKey)) {
+      this.weaponSystem.switchWeapon();
+    }
+
+    // Shooting input
     if (this.fireKey.isDown && this.canShoot(time)) {
       this.shoot(time);
     }
   }
 
   private canShoot(currentTime: number): boolean {
-    return currentTime - this.lastShot >= GameConfig.PLAYER.FIRE_DELAY;
+    const weaponConfig = this.weaponSystem.getCurrentWeapon();
+    return currentTime - this.lastShot >= weaponConfig.fireRate;
   }
 
   private shoot(currentTime: number): void {
     this.lastShot = currentTime;
     
-    const projectile = new Projectile(this.scene, this.x, this.y, this.currentDir);
-    this.projectiles.add(projectile);
+    this.weaponSystem.createProjectile(this.x, this.y, this.currentDir);
     
-    console.log(`🔫 Player shot ${this.currentDir}`);
+    const weaponConfig = this.weaponSystem.getCurrentWeapon();
+    console.log(`🔫 Player shot ${this.currentDir} (${weaponConfig.name})`);
   }
 
   private updateTexture(newDirection: Direction): void {

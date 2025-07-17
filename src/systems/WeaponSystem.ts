@@ -9,11 +9,13 @@ import PierceProjectile from '../entities/PierceProjectile';
 import type { Direction } from '../gfx/TextureGenerator';
 import { DamageType } from '../interfaces/ICollisionSystem';
 
-export enum WeaponType {
-  Normal = 'normal',
-  Pierce = 'pierce',
-  Explosive = 'explosive',
-}
+export const WeaponType = {
+  Normal: 'normal',
+  Pierce: 'pierce',
+  Explosive: 'explosive',
+} as const;
+
+export type WeaponType = typeof WeaponType[keyof typeof WeaponType];
 
 export interface WeaponConfig {
   type: WeaponType;

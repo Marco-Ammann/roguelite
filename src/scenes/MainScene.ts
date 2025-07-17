@@ -1,7 +1,6 @@
 // src/scenes/MainScene.ts (Phase 2.1 Update)
 /**
  * MainScene with CollisionService integration
- * ADHD-friendly: Reduced from ~200 to ~120 lines
  */
 
 import Phaser from "phaser";
@@ -21,7 +20,7 @@ export default class MainScene extends Phaser.Scene {
     private enemies!: Phaser.Physics.Arcade.Group;
     private projectiles!: Phaser.Physics.Arcade.Group;
     
-    // ✨ NEW: Modular services
+    // Modular services
     private enemySpawner!: EnemySpawnService;
     private collisionService!: CollisionService;
     
@@ -55,7 +54,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ REFACTORED: Entity creation (extracted from create)
+     * Entity creation (extracted from create)
      */
     private createEntities(): void {
         // Projectile group with correct physics settings
@@ -78,13 +77,13 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ NEW: Service initialization (replaces setupCollisions)
+     * Service initialization (replaces setupCollisions)
      */
     private initializeServices(): void {
         // Initialize spawn service
         this.enemySpawner = new EnemySpawnService(this, this.enemies, this.player);
         
-        // ✨ NEW: Initialize collision service
+        // Initialize collision service
         this.collisionService = new CollisionService(this);
         
         const collisionGroups: CollisionGroups = {
@@ -106,7 +105,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ REFACTORED: Controls setup (extracted from create)
+     * Controls setup (extracted from create)
      */
     private setupControls(): void {
         this.waveStartKey = this.input.keyboard!.addKey('N'); // 'N' for Next wave
@@ -122,7 +121,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ REFACTORED: First wave start (extracted from create)
+     * First wave start (extracted from create)
      */
     private startFirstWave(): void {
         this.startNextWave();
@@ -238,13 +237,13 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ ENHANCED: Cleanup with CollisionService
+     * Cleanup with CollisionService
      */
     shutdown(): void {
         this.events.off('wave:spawning-complete', this.onWaveSpawningComplete, this);
         this.events.off('wave:enemies-cleared', this.onWaveEnemiesCleared, this);
         this.enemySpawner.destroy();
-        this.collisionService.destroy(); // ✨ NEW: Clean collision service
+        this.collisionService.destroy(); // Clean collision service
         console.log("🧹 MainScene: Cleanup complete (CollisionService destroyed)");
     }
 }
