@@ -1,10 +1,12 @@
+/**
+ * src/ui/DebugOverlay.ts
+ * ------------------------------------------------------------
+ * Main debug overlay (F1) – shows FPS, entity counts **und**
+ * eine gut lesbare Controls‑Legende für alle Debug‑Tools.
+ */
+
 import Phaser from 'phaser';
 import Logger from '../utils/Logger';
-
-/**
- * Lightweight on–screen debug overlay showing FPS and entity counts.
- * Toggled with F1 (visible by default in dev mode).
- */
 import Player from '../entities/Player';
 
 export default class DebugOverlay extends Phaser.GameObjects.Text {
@@ -20,22 +22,30 @@ export default class DebugOverlay extends Phaser.GameObjects.Text {
     enemies: Phaser.Physics.Arcade.Group,
     projectiles: Phaser.Physics.Arcade.Group,
   ) {
-    super(scene, 4, 4, '', { fontSize: '16px', color: '#00ff00' });
+    super(scene, 4, 4, '', {
+      fontSize: '14px',
+      color: '#00ff00',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 6, y: 4 },
+      fontFamily: 'Courier New',
+    });
+
     this.sceneRef = scene;
     this.playerRef = player;
     this.enemies = enemies;
     this.projectiles = projectiles;
+
     scene.add.existing(this).setScrollFactor(0).setDepth(1000);
 
-    // Toggle F1
     this.toggleKey = scene.input.keyboard!.addKey('F1');
     this.setVisible(import.meta.env?.DEV ?? true);
 
     scene.events.on('postupdate', this.updateInfo, this);
-    Logger.info('Debug overlay initialised');
+    Logger.info('DebugOverlay: Initialized (Press F1 to toggle)');
   }
 
-  private updateInfo() {
+  /** Update metrics and handle visibility toggle. */
+  private updateInfo(): void {
     if (Phaser.Input.Keyboard.JustDown(this.toggleKey)) {
       this.setVisible(!this.visible);
     }
@@ -45,10 +55,24 @@ export default class DebugOverlay extends Phaser.GameObjects.Text {
     const hp = this.playerRef.hp;
     const enemies = this.enemies.countActive(true);
     const bullets = this.projectiles.countActive(true);
-    this.setText(`FPS: ${fps}` +
-      `\nHP: ${hp}` +
-      `\nEnemies: ${enemies}` +
-      `\nBullets: ${bullets}`);
+
+    this.setText(
+      [
+        '🖥 MAIN DEBUG OVERLAY',
+        '─────────────────────',
+        `FPS: ${fps}`,
+        `HP: ${hp}`,
+        `Enemies: ${enemies}`,
+        `Bullets: ${bullets}`,
+        '',
+        'CONTROLS',
+        '────────',
+        'F1: Toggle Main Debug',
+        'F2: Collision Debug',
+        'F3: Performance Monitor',
+        'F4: Memory Monitor',
+      ].join('\n'),
+    );
   }
 
   override destroy(fromScene?: boolean): void {

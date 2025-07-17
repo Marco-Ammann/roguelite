@@ -83,7 +83,7 @@ export default class CollisionDebugOverlay extends Phaser.GameObjects.Text {
       `💣 Explosive Hits: ${stats.explosiveHits || 0}`,
       `⚡ Effects Applied: ${stats.effectsApplied || 0}`,
       '─────────────────────────',
-      'F2: Toggle | Green=Hit | Red=Damage'
+      'F2: Toggle Collision Debug | Green=Hit | Red=Damage'
     ].join('\n'));
   }
 

@@ -133,7 +133,7 @@ export default class PerformanceDebugOverlay extends Phaser.GameObjects.Text {
       '🎮 CONTROLS',
       '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
       'F3: Toggle Performance Monitor',
-      'F1: Main Debug | F2: Collision Debug',
+      'F1: Main Debug | F2: Collision | F4: Memory',
       '',
       this.getPerformanceIndicator()
     ].join('\n');
