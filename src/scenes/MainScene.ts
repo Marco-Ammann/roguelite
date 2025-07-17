@@ -10,6 +10,7 @@ import Enemy from '../entities/Enemy';
 import { createPlayer } from '../factories/EntityFactory';
 import DebugOverlay from '../ui/DebugOverlay';
 import CollisionDebugOverlay from '../ui/CollisionDebugOverlay';
+import WeaponDisplay from '../ui/WeaponDisplay';
 import Projectile from '../entities/Projectile';
 import { EnemySpawnService, DEFAULT_WAVES } from '../services/EnemySpawnService';
 import { CollisionService } from '../services/CollisionService';
@@ -49,8 +50,8 @@ export default class MainScene extends Phaser.Scene {
         this.setupUI();
         this.startFirstWave();
         
-        console.log("✅ MainScene: Setup complete (CollisionService active)");
-        console.log("💡 Controls: WASD/Arrows=Move, Space=Shoot, N=Next Wave, F1=Debug");
+        console.log("✅ MainScene: Setup complete (CollisionService + WeaponSystem active)");
+        console.log("💡 Controls: WASD/Arrows=Move, Space=Shoot, Q=Switch Weapon, N=Next Wave, F1=Debug, F2=Collision");
     }
 
     /**
@@ -112,11 +113,12 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * ✨ REFACTORED: UI setup (extracted from create)
+     * UI setup (extracted from create)
      */
     private setupUI(): void {
         new DebugOverlay(this, this.player, this.enemies, this.projectiles);
         new CollisionDebugOverlay(this, this.collisionService);
+        new WeaponDisplay(this);
     }
 
     /**

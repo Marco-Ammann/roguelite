@@ -4,21 +4,22 @@ import { ensurePlayerTexture } from '../gfx/TextureGenerator';
 import type { IDamageable } from '../interfaces/IDamageable';
 import type { Direction } from '../gfx/TextureGenerator';
 import HealthBar from '../ui/HealthBar';
-import Projectile from './Projectile';
+import { WeaponSystem } from '../systems/WeaponSystem';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite implements IDamageable {
-  readonly maxHp = GameConfig.PLAYER.MAX_HP;
-  hp = this.maxHp;
-
-  private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd: any;
-  private healthBar: HealthBar;
-  private projectiles: Phaser.Physics.Arcade.Group;
-  private fireKey: Phaser.Input.Keyboard.Key;
+    readonly maxHp = GameConfig.PLAYER.MAX_HP;
+    hp = this.maxHp;
   
-  private lastShot = 0;
-  private lastHit = 0;
-  private currentDir: Direction = 'down';
+    private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+    private wasd: any;
+    private healthBar: HealthBar;
+    private weaponSystem: WeaponSystem;
+    private fireKey: Phaser.Input.Keyboard.Key;
+    private weaponSwitchKey: Phaser.Input.Keyboard.Key;
+    
+    private lastShot = 0;
+    private lastHit = 0;
+    private currentDir: Direction = 'down';
 
   constructor(
     scene: Phaser.Scene,
@@ -29,15 +30,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     ensurePlayerTexture(scene, 'down');
     super(scene, x, y, 'player-down');
 
-    // Simplified input system - just use what works
     this.cursors = scene.input.keyboard!.createCursorKeys();
     this.wasd = scene.input.keyboard!.addKeys('W,S,A,D');
     this.fireKey = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.projectiles = projectiles;
-
+    this.weaponSwitchKey = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    
+    this.weaponSystem = new WeaponSystem(scene, projectiles);
     this.healthBar = new HealthBar(scene, this);
     
-    console.log('✅ Player: Simplified input system loaded');
+    console.log('✅ Player: WeaponSystem loaded');
   }
 
   update(time: number, _delta: number): void {

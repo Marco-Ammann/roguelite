@@ -168,17 +168,26 @@ export class CollisionService implements ICollisionService {
   }
 
   /**
-   * Process projectile hit (Phase 1 compatibility)
+   * Process projectile hit (Phase 2.2: Pierce damage support)
    */
   private processProjectileHit(eventData: CollisionEventData): void {
-    const projectile = eventData.attacker as Projectile;
+    const projectile = eventData.attacker as any;
     const enemy = eventData.target as Enemy;
     
-    // Phase 1 behavior: Destroy projectile, damage enemy
-    projectile.destroy();
+    // Check if projectile has pierce capability
+    const shouldDestroy = projectile.onHitEnemy ? 
+      projectile.onHitEnemy(enemy) : 
+      true; // Standard projectiles always destroy
+    
+    // Apply damage to enemy
     enemy.takeDamage(eventData.damage);
     
-    Logger.info(`💥 Projectile hit ${enemy.rank} enemy`);
+    // Destroy projectile if needed
+    if (shouldDestroy) {
+      projectile.destroy();
+    }
+    
+    Logger.info(`💥 Projectile hit ${enemy.rank} enemy${shouldDestroy ? ' (destroyed)' : ' (pierced)'}`);
     
     // Event system for future expansion
     this.callbacks?.onProjectileHitEnemy?.(eventData);
