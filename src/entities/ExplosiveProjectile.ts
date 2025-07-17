@@ -237,28 +237,26 @@ export default class ExplosiveProjectile extends Projectile {
   private createExplosionVfx(): void {
     console.log(`💥 Creating explosion VFX at (${this.x}, ${this.y})`);
     
+    // Create graphics in SCREEN space, not world space
     this.explosionVfx = this.scene.add.graphics();
-    this.explosionVfx.setPosition(0, 0); // World coordinates, not relative
-    this.explosionVfx.setDepth(1000); // Very high depth
+    this.explosionVfx.setScrollFactor(1); // Follow camera
+    this.explosionVfx.setDepth(500); // High but not extreme
     
-    // Draw at actual world position
-    this.explosionVfx.fillStyle(0xff6600, 1.0);
+    // Draw at world position (Phaser handles camera conversion)
+    this.explosionVfx.fillStyle(0xff6600, 0.9);
     this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius);
     
-    this.explosionVfx.fillStyle(0xffff00, 0.8);
+    this.explosionVfx.fillStyle(0xffff00, 0.7);
     this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.6);
     
-    this.explosionVfx.fillStyle(0xffffff, 1.0);
+    this.explosionVfx.fillStyle(0xffffff, 0.9);
     this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.3);
     
-    console.log(`💥 Explosion graphics created at depth ${this.explosionVfx.depth}`);
-    
-    // Cleanup after 1 second
-    this.scene.time.delayedCall(1000, () => {
-      if (this.explosionVfx && this.explosionVfx.scene) {
+    // Cleanup
+    this.scene.time.delayedCall(800, () => {
+      if (this.explosionVfx?.scene) {
         this.explosionVfx.destroy();
         this.explosionVfx = undefined;
-        console.log(`💥 Explosion cleaned up`);
       }
     });
   }

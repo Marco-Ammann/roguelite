@@ -251,20 +251,12 @@ export class CollisionService implements ICollisionService {
    * @param enemy - Enemy that was hit
    * @returns true if projectile should be destroyed
    */
-  private handlePierceProjectileHit(
-    projectile: PierceProjectile,
-    enemy: any
-  ): boolean {
-    if (typeof projectile.onHitEnemy === "function") {
-      const shouldDestroy = projectile.onHitEnemy(enemy);
-      Logger.info(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
-      return shouldDestroy;
-    }
-
-    Logger.warn(
-      "CollisionService: Pierce projectile missing onHitEnemy method"
-    );
-    return true;
+  private handlePierceProjectileHit(projectile: PierceProjectile, enemy: any): boolean {
+    const shouldDestroy = projectile.onHitEnemy(enemy);
+    Logger.info(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
+    
+    // RESPECT the pierce projectile's decision!
+    return shouldDestroy; // Don't force destroy!
   }
 
   /**

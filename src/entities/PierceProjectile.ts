@@ -135,49 +135,6 @@ export default class PierceProjectile extends Projectile {
     return `enemy_${Math.round(sprite.x)}_${Math.round(sprite.y)}`;
   }
 
-  /**
-   * Frame-gate collision check - prevents multiple hits per enemy per frame
-   * 
-   * @param enemyId - Unique enemy identifier
-   * @returns true if hit should be processed, false if blocked by frame-gate
-   */
-  private shouldProcessHit(enemyId: string): boolean {
-    const currentFrame = this.scene.game.loop.frame;
-    const lastFrame = this.hitGate.get(enemyId);
-    
-    // Block if hit in last 10 frames (not just current frame)
-    if (lastFrame && currentFrame - lastFrame < 10) {
-      return false;
-    }
-    
-    this.hitGate.set(enemyId, currentFrame);
-    return true;
-  }
-
-  /**
-   * Add visual feedback effect when hitting an enemy
-   */
-  private addHitEffect(): void {
-    // Brief flash effect
-    this.setTint(0xffffff);
-    
-    // Return to yellow tint after short delay
-    this.scene.time.delayedCall(50, () => {
-      if (this.active) {
-        this.setTint(0xffff00);
-      }
-    });
-    
-    // Slight scale pulse effect
-    this.scene.tweens.add({
-      targets: this,
-      scaleX: 1.3,
-      scaleY: 1.3,
-      duration: 100,
-      yoyo: true,
-      ease: 'Power2'
-    });
-  }
 
   /**
    * Override destroy to ensure proper cleanup
