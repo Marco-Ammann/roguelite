@@ -1,117 +1,102 @@
-import Phaser from "phaser";
-
 /**
- * Ensures that the procedural player texture exists in the texture manager.
- * If not present it will be generated using Phaser Graphics.
+ * src/gfx/TextureGenerator.ts
+ * ------------------------------------------------------------
+ * Procedural texture generator for player, enemy and bullet
+ * sprites.  Relies on {@link TextureCache} to avoid duplicate
+ * generation and on {@link GraphicsPool} for zero‑GC drawing.
  */
-export function ensurePlayerTexture(scene: Phaser.Scene, dir: Direction = 'down'): void {
-    const key = `player-${dir}`;
-    if (scene.textures.exists(key)) return;
 
-    const g = scene.add.graphics();
-
-    // outline
-    g.fillStyle(0x000000, 1);
-    g.fillRect(0, 0, 24, 24);
-
-    // armor body (blue)
-    g.fillStyle(0x2196f3, 1);
-    g.fillRect(2, 8, 20, 14);
-
-    // helmet
-    g.fillStyle(0x1976d2, 1);
-    g.fillRect(4, 2, 16, 8);
-
-    // visor position based on dir (shift x/y)
-    const visorY = dir === 'up' ? 3 : dir === 'down' ? 5 : 4;
-    const visorOffsetX = dir === 'left' ? -2 : dir === 'right' ? 2 : 0;
-    g.fillStyle(0xeeeeee, 1);
-    g.fillRect(6 + visorOffsetX, visorY, 12, 3);
-
-    // simple shoulder pads
-    g.fillStyle(0x64b5f6, 1);
-    g.fillRect(0, 10, 4, 6);
-    g.fillRect(20, 10, 4, 6);
-
-    // shading bottom of body
-    g.fillStyle(0x1565c0, 1);
-    g.fillRect(2, 16, 20, 6);
-
-    g.generateTexture(key, 24, 24);
-    g.destroy();
-}
-
-/**
- * Ensures that the procedural enemy texture exists.
- */
+import Phaser from 'phaser';
+import TextureCache from '../systems/TextureCache';
 import { EnemyRank } from '../enums/EnemyRank';
 
 export type Direction = 'down' | 'up' | 'left' | 'right';
 
-// Bullet texture (4×4 white square)
+/* -------------------------------------------------------------------------- */
+/* Bullet                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** 4×4 white pixel – used for all projectile variants */
 export function ensureBulletTexture(scene: Phaser.Scene): void {
-  if (scene.textures.exists('bullet')) return;
-  const g = scene.add.graphics();
-  g.fillStyle(0xffffff, 1);
-  g.fillRect(0, 0, 4, 4);
-  g.generateTexture('bullet', 4, 4);
-  g.destroy();
+  TextureCache.ensure(scene, 'bullet', { width: 4, height: 4 }, (g) => {
+    g.fillStyle(0xffffff).fillRect(0, 0, 4, 4);
+  });
 }
 
+/* -------------------------------------------------------------------------- */
+/* Player                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Blue knight sprite (24×24) with visor that moves depending
+ * on facing {@link Direction}.
+ */
+export function ensurePlayerTexture(
+  scene: Phaser.Scene,
+  dir: Direction = 'down',
+): void {
+  const key = `player-${dir}`;
+  TextureCache.ensure(scene, key, { width: 24, height: 24 }, (g) => {
+    const visorY = dir === 'up' ? 3 : dir === 'down' ? 5 : 4;
+    const visorDX = dir === 'left' ? -2 : dir === 'right' ? 2 : 0;
+
+    g.fillStyle(0x000000).fillRect(0, 0, 24, 24); // outline
+    g.fillStyle(0x2196f3).fillRect(2, 8, 20, 14); // body
+    g.fillStyle(0x1976d2).fillRect(4, 2, 16, 8);  // helmet
+    g.fillStyle(0xeeeeee).fillRect(6 + visorDX, visorY, 12, 3); // visor
+    g.fillStyle(0x64b5f6)
+      .fillRect(0, 10, 4, 6)
+      .fillRect(20, 10, 4, 6);                      // shoulders
+    g.fillStyle(0x1565c0).fillRect(2, 16, 20, 6);  // shading
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Enemy                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Enemy sprite (24×24).  Colour & accents vary by {@link EnemyRank}.
+ */
 export function ensureEnemyTexture(
   scene: Phaser.Scene,
   rank: EnemyRank = EnemyRank.Standard,
   dir: Direction = 'down',
 ): void {
-    const key = `enemy-${rank}-${dir}`;
-    if (scene.textures.exists(key)) return;
+  const key = `enemy-${rank}-${dir}`;
+  TextureCache.ensure(scene, key, { width: 24, height: 24 }, (g) => {
+    const base =
+      rank === EnemyRank.Standard
+        ? 0xe53935
+        : rank === EnemyRank.Elite
+        ? 0x673ab7
+        : 0xffb300;
 
-    const g = scene.add.graphics();
-
-    // Pick colour based on rank
-    const colour = rank === EnemyRank.Standard ? 0xe53935 // red
-                 : rank === EnemyRank.Elite ? 0x673ab7   // purple
-                 : 0xffb300;                             // boss: amber
-
-    // outline
-    g.fillStyle(0x000000, 1);
-    g.fillRect(0, 0, 24, 24);
-
-    // inner body
-    g.fillStyle(colour, 1);
-    g.fillRect(2, 2, 20, 20);
-
-    // bottom shading
-    const shade = Phaser.Display.Color.IntegerToColor(colour).darken(20).color;
-    g.fillStyle(shade, 1);
-    g.fillRect(2, 14, 20, 8);
-
-    // eyes based on direction
-    g.fillStyle(0xffffff, 1);
     const eyeY = dir === 'up' ? 5 : dir === 'down' ? 9 : 7;
-    const eyeOffsetX = dir === 'left' ? -2 : dir === 'right' ? 2 : 0;
-    g.fillRect(6 + eyeOffsetX, eyeY, 3, 3);
-    g.fillRect(14 + eyeOffsetX, eyeY, 3, 3);
+    const eyeDX = dir === 'left' ? -2 : dir === 'right' ? 2 : 0;
 
-    // belt / accent for elites and boss + horns
+    g.fillStyle(0x000000).fillRect(0, 0, 24, 24); // outline
+    g.fillStyle(base).fillRect(2, 2, 20, 20);     // body
+    g.fillStyle(
+      Phaser.Display.Color.IntegerToColor(base).darken(20).color,
+    ).fillRect(2, 14, 20, 8);                     // shading
+
+    g.fillStyle(0xffffff)
+      .fillRect(6 + eyeDX, eyeY, 3, 3)
+      .fillRect(14 + eyeDX, eyeY, 3, 3);          // eyes
+
     if (rank !== EnemyRank.Standard) {
-      const accentColor = rank === EnemyRank.Elite ? 0xffffff : 0x000000;
-      g.fillStyle(accentColor, 1);
-      g.fillRect(2, 18, 20, 3);
+      const accent = rank === EnemyRank.Elite ? 0xffffff : 0x000000;
+      g.fillStyle(accent).fillRect(2, 18, 20, 3); // belt
 
       // horns
-      g.fillStyle(accentColor, 1);
       if (rank === EnemyRank.Elite) {
-        // small horns
-        g.fillTriangle(6, 2, 9, -4, 12, 2);
-        g.fillTriangle(12, 2, 15, -4, 18, 2);
+        g.fillTriangle(6, 2, 9, -4, 12, 2)
+          .fillTriangle(12, 2, 15, -4, 18, 2);
       } else {
-        // boss big horns
-        g.fillTriangle(4, 2, 9, -6, 14, 2);
-        g.fillTriangle(10, 2, 15, -6, 20, 2);
+        g.fillTriangle(4, 2, 9, -6, 14, 2)
+          .fillTriangle(10, 2, 15, -6, 20, 2);
       }
     }
-
-    g.generateTexture(key, 24, 24);
-    g.destroy();
+  });
 }
