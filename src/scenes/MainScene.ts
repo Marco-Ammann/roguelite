@@ -54,7 +54,6 @@ export default class MainScene extends Phaser.Scene {
     // ========================================
     // Performance Monitoring
     // ========================================
-    private performanceOverlay!: PerformanceDebugOverlay;
     private lastWaveCheckFrame = 0;
     private waveCompleteNotified = false;
     
@@ -202,7 +201,7 @@ export default class MainScene extends Phaser.Scene {
         new CollisionDebugOverlay(this, this.collisionService);
         
         // Create performance overlay with pool monitoring
-        this.performanceOverlay = new PerformanceDebugOverlay(this, this.weaponSystem);
+        new PerformanceDebugOverlay(this, this.weaponSystem);
         
         // Create weapon display
         new WeaponDisplay(this);
@@ -233,7 +232,7 @@ export default class MainScene extends Phaser.Scene {
      */
     private handleProjectileHitCallback(eventData: any): void {
         // Future: Add screen shake, particle effects, sound effects
-        Logger.debug(`🎯 MainScene: Projectile hit processed - advanced effects ready`);
+        Logger.info(`🎯 MainScene: Projectile hit processed - advanced effects ready`);
         
         // Example: Screen shake effect
         this.cameras.main.shake(50, 0.01);
@@ -249,7 +248,7 @@ export default class MainScene extends Phaser.Scene {
      */
     private handleEnemyHitCallback(eventData: any): void {
         // Future: Add damage indicators, screen effects, audio feedback
-        Logger.debug(`⚡ MainScene: Enemy hit processed - feedback systems ready`);
+        Logger.info(`⚡ MainScene: Enemy hit processed - feedback systems ready`);
         
         // Example: Screen flash effect
         this.cameras.main.flash(100, 255, 0, 0, false);

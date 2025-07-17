@@ -16,7 +16,6 @@ export default class PerformanceDebugOverlay extends Phaser.GameObjects.Text {
   private readonly sceneRef: Phaser.Scene;
   private readonly weaponSystem: WeaponSystem;
   private readonly toggleKey: Phaser.Input.Keyboard.Key;
-  private lastUpdate = 0;
   private frameCount = 0;
   private startTime = 0;
   
@@ -158,18 +157,6 @@ export default class PerformanceDebugOverlay extends Phaser.GameObjects.Text {
     } else {
       return '🔴 POOR PERFORMANCE - CHECK POOLS';
     }
-  }
-
-  /**
-   * Get color based on performance
-   */
-  private getPerformanceColor(): string {
-    const currentFps = Math.round(this.sceneRef.game.loop.actualFps);
-    
-    if (currentFps >= 58) return '#00ff00';
-    if (currentFps >= 45) return '#ffff00';
-    if (currentFps >= 30) return '#ff9900';
-    return '#ff0000';
   }
 
   /**

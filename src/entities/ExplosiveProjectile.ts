@@ -1,18 +1,11 @@
 /**
- * src/entities/ExplosiveProjectile.ts - Complete Pool-Compatible Implementation
+ * src/entities/ExplosiveProjectile.ts - Fixed TypeScript Issues
  * 
- * PERFORMANCE IMPROVEMENTS:
- * - Pool-compatible reset() method for object reuse
- * - Proper cleanup of explosion state between pool cycles
- * - Memory-efficient damage tracking with Set cleanup
- * - Optimized VFX creation and destruction
- * 
- * FEATURES:
- * - Explodes on first enemy contact with configurable radius
- * - AOE damage using Phaser's physics.overlapCirc()
- * - Visual explosion effects with procedural graphics
- * - Single-frame damage per enemy (no double-hits)
- * - Proper cleanup and reset for pooling system
+ * FIXES:
+ * - Removed private isInitialized conflict with base class
+ * - Uses protected isInitialized from base class
+ * - Fixed unused parameter warnings
+ * - Proper type annotations and cleanup
  */
 
 import Phaser from 'phaser';
@@ -34,9 +27,6 @@ export default class ExplosiveProjectile extends Projectile {
 
   /** Reference to explosion timer for cleanup */
   private explosionTimer?: Phaser.Time.TimerEvent;
-
-  /** Flag to track if projectile has been properly initialized */
-  private isInitialized = false;
 
   /**
    * Creates a new ExplosiveProjectile instance
@@ -79,7 +69,6 @@ export default class ExplosiveProjectile extends Projectile {
       ease: 'Sine.easeInOut'
     });
     
-    this.isInitialized = true;
     console.info(`💥 Explosive projectile initialized (radius ${this.explosionRadius}px)`);
   }
 
@@ -133,10 +122,10 @@ export default class ExplosiveProjectile extends Projectile {
    * 
    * Always explodes on first contact and returns true to destroy projectile
    * 
-   * @param enemy - Enemy GameObject that was hit (triggers explosion)
+   * @param _enemy - Enemy GameObject that was hit (triggers explosion)
    * @returns Always true - explosive projectiles are consumed on impact
    */
-  public onHitEnemy(enemy: Phaser.GameObjects.GameObject): boolean {
+  public onHitEnemy(_enemy: Phaser.GameObjects.GameObject): boolean {
     if (!this.hasExploded) {
       this.hasExploded = true;
       
@@ -304,7 +293,7 @@ export default class ExplosiveProjectile extends Projectile {
   /**
    * Override destroy to ensure proper cleanup
    */
-  public override destroy(fromScene?: boolean): void {
+  public override destroy(): void {
     // Clean up VFX and timers
     if (this.explosionVfx) {
       this.explosionVfx.destroy();
@@ -324,7 +313,7 @@ export default class ExplosiveProjectile extends Projectile {
     this.hasExploded = false;
     
     // Call parent destroy (which handles pool return)
-    super.destroy(fromScene);
+    super.destroy();
   }
 
   /**

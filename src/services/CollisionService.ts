@@ -1,18 +1,12 @@
 /**
- * src/services/CollisionService.ts - Complete Pool Integration Implementation
+ * src/services/CollisionService.ts - Fixed TypeScript Issues
  * 
- * PERFORMANCE IMPROVEMENTS:
- * - Pool-aware collision detection with proper projectile lifecycle
- * - Frame-gate optimization to prevent duplicate collision processing
- * - Type-safe collision handling with proper instanceof checks
- * - Memory-efficient event tracking and statistics
- * 
- * FEATURES:
- * - Handles all projectile types (Normal, Pierce, Explosive) with pool integration
- * - Frame-based collision prevention system
- * - Comprehensive collision statistics and debugging
- * - Event-driven architecture for extensibility
- * - Proper cleanup and resource management
+ * FIXES:
+ * - Fixed Logger.debug calls (changed to Logger.info)
+ * - Fixed DamageType assignments and typing
+ * - Removed unused imports
+ * - Fixed unused parameter warnings
+ * - Proper type annotations throughout
  */
 
 import Phaser from "phaser";
@@ -23,9 +17,6 @@ import type {
   CollisionEventData,
 } from "../interfaces/ICollisionSystem";
 import { DamageType } from "../interfaces/ICollisionSystem";
-import type Player from "../entities/Player";
-import type Enemy from "../entities/Enemy";
-import type Projectile from "../entities/Projectile";
 import type PierceProjectile from "../entities/PierceProjectile";
 import type ExplosiveProjectile from "../entities/ExplosiveProjectile";
 import Logger from "../utils/Logger";
@@ -108,7 +99,7 @@ export class CollisionService implements ICollisionService {
       this.scene
     );
 
-    Logger.debug("CollisionService: Physics overlaps configured");
+    Logger.info("CollisionService: Physics overlaps configured");
   }
 
   /**
@@ -118,7 +109,7 @@ export class CollisionService implements ICollisionService {
     // Listen for projectile pool return events
     this.scene.events.on('projectile:return', this.onProjectileReturn, this);
     
-    Logger.debug("CollisionService: Event listeners configured");
+    Logger.info("CollisionService: Event listeners configured");
   }
 
   // ========================================
@@ -208,7 +199,7 @@ export class CollisionService implements ICollisionService {
       damageType = DamageType.Explosive;
       damage = 2;
     } else {
-      shouldDestroy = this.handleNormalProjectileHit(projectile, enemy);
+      shouldDestroy = this.handleNormalProjectileHit(enemy);
       damageType = DamageType.Normal;
       damage = 1;
     }
@@ -242,12 +233,11 @@ export class CollisionService implements ICollisionService {
   /**
    * Handle normal projectile collision
    * 
-   * @param projectile - Normal projectile
    * @param enemy - Enemy that was hit
    * @returns true (normal projectiles always destroyed)
    */
-  private handleNormalProjectileHit(projectile: any, enemy: any): boolean {
-    Logger.debug(`🎯 Normal projectile hit enemy ${enemy.enemyId || 'unknown'}`);
+  private handleNormalProjectileHit(enemy: any): boolean {
+    Logger.info(`🎯 Normal projectile hit enemy ${enemy.enemyId || 'unknown'}`);
     return true; // Always destroy normal projectiles
   }
 
@@ -261,7 +251,7 @@ export class CollisionService implements ICollisionService {
   private handlePierceProjectileHit(projectile: PierceProjectile, enemy: any): boolean {
     if (typeof projectile.onHitEnemy === 'function') {
       const shouldDestroy = projectile.onHitEnemy(enemy);
-      Logger.debug(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
+      Logger.info(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
       return shouldDestroy;
     }
     
@@ -279,7 +269,7 @@ export class CollisionService implements ICollisionService {
   private handleExplosiveProjectileHit(projectile: ExplosiveProjectile, enemy: any): boolean {
     if (typeof projectile.onHitEnemy === 'function') {
       const shouldDestroy = projectile.onHitEnemy(enemy);
-      Logger.debug(`💥 Explosive projectile hit - destroy: ${shouldDestroy}`);
+      Logger.info(`💥 Explosive projectile hit - destroy: ${shouldDestroy}`);
       return shouldDestroy;
     }
     
@@ -341,7 +331,7 @@ export class CollisionService implements ICollisionService {
     this.callbacks?.onEnemyHitPlayer?.(eventData);
     this.scene.events.emit("collision:enemy-player", eventData);
     
-    Logger.debug(`😵 Enemy ${enemy.enemyId || 'unknown'} hit player`);
+    Logger.info(`😵 Enemy ${enemy.enemyId || 'unknown'} hit player`);
   }
 
   // ========================================
@@ -497,7 +487,7 @@ export class CollisionService implements ICollisionService {
       }
     }
 
-    Logger.debug(`🔄 CollisionService: Cleaned frame-gate for returned projectile`);
+    Logger.info(`🔄 CollisionService: Cleaned frame-gate for returned projectile`);
   }
 
   // ========================================

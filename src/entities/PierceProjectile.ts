@@ -1,17 +1,11 @@
 /**
- * src/entities/PierceProjectile.ts - Complete Pool-Compatible Implementation
+ * src/entities/PierceProjectile.ts - Fixed TypeScript Issues
  * 
- * PERFORMANCE IMPROVEMENTS:
- * - Pool-compatible reset() method for object reuse
- * - Proper cleanup of internal state between pool cycles
- * - Memory-efficient hit tracking with Set cleanup
- * - Frame-gate cache clearing for collision prevention
- * 
- * FEATURES:
- * - Pierces through multiple enemies (default: 3 hits)
- * - Frame-based collision prevention (no double-hits)
- * - Visual feedback with yellow tint
- * - Proper cleanup and reset for pooling system
+ * FIXES:
+ * - Removed private isInitialized conflict with base class
+ * - Uses protected isInitialized from base class
+ * - Proper type annotations and cleanup
+ * - Fixed unused parameter warnings
  */
 
 import Phaser from 'phaser';
@@ -30,9 +24,6 @@ export default class PierceProjectile extends Projectile {
   
   /** Current number of unique enemies hit */
   private currentPierceCount = 0;
-
-  /** Flag to track if projectile has been properly initialized */
-  private isInitialized = false;
 
   /**
    * Creates a new PierceProjectile instance
@@ -64,7 +55,6 @@ export default class PierceProjectile extends Projectile {
     // Apply yellow tint to indicate pierce projectile
     this.setTint(0xffff00);
     
-    this.isInitialized = true;
     console.info(`⚡ Pierce projectile initialized (max ${this.maxPierceCount} hits)`);
   }
 
@@ -203,14 +193,14 @@ export default class PierceProjectile extends Projectile {
   /**
    * Override destroy to ensure proper cleanup
    */
-  public override destroy(fromScene?: boolean): void {
+  public override destroy(): void {
     // Clear all internal state before returning to pool
     this.hitGate.clear();
     this.hitEnemies.clear();
     this.currentPierceCount = 0;
     
     // Call parent destroy (which handles pool return)
-    super.destroy(fromScene);
+    super.destroy();
   }
 
   /**

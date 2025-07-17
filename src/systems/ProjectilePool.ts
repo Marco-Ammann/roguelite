@@ -1,11 +1,11 @@
 /**
- * src/systems/ProjectilePool.ts
- * High-Performance Entity Pooling für Projektile
+ * src/systems/ProjectilePool.ts - Fixed TypeScript Issues
  * 
- * PROBLEM GELÖST:
- * - Keine new Projectile() bei jedem Schuss
- * - Keine Garbage Collection Spikes
- * - Konstante Memory Usage
+ * FIXES:
+ * - Fixed PoolableProjectile interface to extend GameObject
+ * - Fixed type conversion issues
+ * - Proper return type handling
+ * - Fixed method chaining issues
  */
 
 import Phaser from 'phaser';
@@ -16,10 +16,10 @@ import { WeaponType } from './WeaponSystem';
 import type { Direction } from '../gfx/TextureGenerator';
 import Logger from '../utils/Logger';
 
-interface PoolableProjectile {
+interface PoolableProjectile extends Phaser.GameObjects.GameObject {
   reset(x: number, y: number, direction: Direction): void;
-  setActive(active: boolean): void;
-  setVisible(visible: boolean): void;
+  setActive(active: boolean): PoolableProjectile;
+  setVisible(visible: boolean): PoolableProjectile;
   destroy(): void;
 }
 
@@ -61,7 +61,8 @@ export default class ProjectilePool {
     // Normal Projectiles
     for (let i = 0; i < this.POOL_SIZE.normal; i++) {
       const projectile = new Projectile(this.scene, 0, 0, 'down');
-      projectile.setActive(false).setVisible(false);
+      projectile.setActive(false);
+      projectile.setVisible(false);
       this.normalPool.push(projectile);
       this.stats.created.normal++;
     }
@@ -69,7 +70,8 @@ export default class ProjectilePool {
     // Pierce Projectiles  
     for (let i = 0; i < this.POOL_SIZE.pierce; i++) {
       const projectile = new PierceProjectile(this.scene, 0, 0, 'down', 3);
-      projectile.setActive(false).setVisible(false);
+      projectile.setActive(false);
+      projectile.setVisible(false);
       this.piercePool.push(projectile);
       this.stats.created.pierce++;
     }
@@ -77,7 +79,8 @@ export default class ProjectilePool {
     // Explosive Projectiles
     for (let i = 0; i < this.POOL_SIZE.explosive; i++) {
       const projectile = new ExplosiveProjectile(this.scene, 0, 0, 'down', 60);
-      projectile.setActive(false).setVisible(false);
+      projectile.setActive(false);
+      projectile.setVisible(false);
       this.explosivePool.push(projectile);
       this.stats.created.explosive++;
     }
@@ -93,27 +96,28 @@ export default class ProjectilePool {
     
     switch (type) {
       case WeaponType.Pierce:
-        projectile = this.getPierceProjectile();
+        projectile = this.getPierceProjectile() as PoolableProjectile;
         this.stats.active.pierce++;
         break;
       case WeaponType.Explosive:
-        projectile = this.getExplosiveProjectile();
+        projectile = this.getExplosiveProjectile() as PoolableProjectile;
         this.stats.active.explosive++;
         break;
       default:
-        projectile = this.getNormalProjectile();
+        projectile = this.getNormalProjectile() as PoolableProjectile;
         this.stats.active.normal++;
         break;
     }
     
     // Reset position und direction
     projectile.reset(x, y, direction);
-    projectile.setActive(true).setVisible(true);
+    projectile.setActive(true);
+    projectile.setVisible(true);
     
     // Add to Phaser group
-    this.projectileGroup.add(projectile as Phaser.GameObjects.GameObject);
+    this.projectileGroup.add(projectile);
     
-    return projectile as Phaser.GameObjects.GameObject;
+    return projectile;
   }
 
   /**
@@ -129,7 +133,8 @@ export default class ProjectilePool {
     this.projectileGroup.remove(projectile);
     
     // Deactivate
-    proj.setActive(false).setVisible(false);
+    proj.setActive(false);
+    proj.setVisible(false);
     
     // Return to appropriate pool
     switch (type) {

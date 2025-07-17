@@ -1,18 +1,12 @@
 /**
- * src/entities/Player.ts - Complete Pool Integration Implementation
+ * src/entities/Player.ts - Fixed TypeScript Issues
  * 
- * PERFORMANCE IMPROVEMENTS:
- * - Integrated WeaponSystem with ProjectilePool for zero-allocation shooting
- * - Optimized movement calculations with proper vector normalization
- * - Efficient texture switching with caching
- * - Memory-efficient event handling and cleanup
- * 
- * FEATURES:
- * - 8-directional movement with WASD/Arrow key support
- * - Weapon switching system with visual feedback (Q key)
- * - Directional sprite textures with procedural generation
- * - Health system with invincibility frames
- * - Proper cleanup and resource management
+ * FIXES:
+ * - Fixed property initialization errors (strict mode)
+ * - Fixed Logger.debug calls (changed to Logger.info)
+ * - Fixed wasdKeys type annotation
+ * - Fixed unused parameter warnings
+ * - Proper type annotations throughout
  */
 
 import Phaser from 'phaser';
@@ -32,23 +26,23 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     hp = this.maxHp;
     
     // ========================================
-    // Input Management
+    // Input Management - Fixed initialization
     // ========================================
-    private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-    private wasdKeys: { [key: string]: Phaser.Input.Keyboard.Key };
-    private fireKey: Phaser.Input.Keyboard.Key;
-    private weaponSwitchKey: Phaser.Input.Keyboard.Key;
+    private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+    private wasdKeys!: Record<string, Phaser.Input.Keyboard.Key>;
+    private fireKey!: Phaser.Input.Keyboard.Key;
+    private weaponSwitchKey!: Phaser.Input.Keyboard.Key;
     
     // ========================================
-    // Visual and Audio Systems
+    // Visual and Audio Systems - Fixed initialization
     // ========================================
-    private healthBar: HealthBar;
+    private healthBar!: HealthBar;
     private currentDirection: Direction = 'down';
     
     // ========================================
-    // Weapon and Combat Systems
+    // Weapon and Combat Systems - Fixed initialization
     // ========================================
-    private weaponSystem: WeaponSystem;
+    private weaponSystem!: WeaponSystem;
     private lastShotTime = 0;
     private lastHitTime = 0;
     
@@ -94,13 +88,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     private initializeInput(): void {
         // Movement controls
         this.cursors = this.scene.input.keyboard!.createCursorKeys();
-        this.wasdKeys = this.scene.input.keyboard!.addKeys('W,S,A,D');
+        this.wasdKeys = this.scene.input.keyboard!.addKeys('W,S,A,D') as Record<string, Phaser.Input.Keyboard.Key>;
         
         // Action controls
         this.fireKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.weaponSwitchKey = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
         
-        Logger.debug('Player: Input controls initialized');
+        Logger.info('Player: Input controls initialized');
     }
 
     /**
@@ -114,7 +108,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         // Listen for weapon switch events for audio/visual feedback
         this.scene.events.on('weapon:switched', this.onWeaponSwitched, this);
         
-        Logger.debug('Player: Weapon system initialized with pool integration');
+        Logger.info('Player: Weapon system initialized with pool integration');
     }
 
     /**
@@ -122,7 +116,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      */
     private initializeUI(): void {
         this.healthBar = new HealthBar(this.scene, this);
-        Logger.debug('Player: UI elements initialized');
+        Logger.info('Player: UI elements initialized');
     }
 
     /**
@@ -137,7 +131,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
             body.setDrag(800, 800); // Smooth stopping
         }
         
-        Logger.debug('Player: Physics properties initialized');
+        Logger.info('Player: Physics properties initialized');
     }
 
     // ========================================
@@ -151,19 +145,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * @param delta - Time delta since last update
      */
     update(time: number, delta: number): void {
-        this.handleMovementInput(time, delta);
+        this.handleMovementInput();
         this.handleWeaponInput(time);
-        this.handleActionInput(time);
+        this.handleActionInput();
         this.updateVisuals();
     }
 
     /**
      * Handle movement input and apply physics-based movement
-     * 
-     * @param time - Current game time
-     * @param delta - Time delta since last update
      */
-    private handleMovementInput(time: number, delta: number): void {
+    private handleMovementInput(): void {
         // Calculate movement input vector
         const inputX = this.getHorizontalInput();
         const inputY = this.getVerticalInput();
@@ -269,10 +260,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
 
     /**
      * Handle other action inputs (future: special abilities, etc.)
-     * 
-     * @param time - Current game time
      */
-    private handleActionInput(time: number): void {
+    private handleActionInput(): void {
         // Future: Handle special ability inputs, item usage, etc.
         // Example: Dash ability, shield activation, etc.
     }
@@ -313,7 +302,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         
         // Log shot with weapon info
         const weaponConfig = this.weaponSystem.getCurrentWeapon();
-        Logger.debug(`🔫 Player: Fired ${weaponConfig.name} projectile ${this.currentDirection}`);
+        Logger.info(`🔫 Player: Fired ${weaponConfig.name} projectile ${this.currentDirection}`);
         
         // Add visual/audio feedback
         this.addShootingEffect();
@@ -388,7 +377,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         this.setTexture(`player-${newDirection}`);
         this.currentDirection = newDirection;
         
-        Logger.debug(`Player: Direction changed to ${newDirection}`);
+        Logger.info(`Player: Direction changed to ${newDirection}`);
     }
 
     // ========================================
@@ -550,7 +539,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     /**
      * Cleanup player resources when destroyed
      */
-    public override destroy(fromScene?: boolean): void {
+    public override destroy(): void {
         // Remove event listeners
         this.scene.events.off('weapon:switched', this.onWeaponSwitched, this);
         
@@ -570,6 +559,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
         Logger.info('🧹 Player: Cleanup complete');
         
         // Call parent destroy
-        super.destroy(fromScene);
+        super.destroy();
     }
 }

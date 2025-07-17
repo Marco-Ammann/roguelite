@@ -33,7 +33,6 @@ export interface WeaponConfig {
 export class WeaponSystem {
   private scene: Phaser.Scene;
   private projectilePool: ProjectilePool;
-  private projectileGroup: Phaser.Physics.Arcade.Group;
   private currentWeapon: WeaponType = WeaponType.Normal;
   
   private weapons: Map<WeaponType, WeaponConfig> = new Map([
@@ -68,7 +67,6 @@ export class WeaponSystem {
 
   constructor(scene: Phaser.Scene, projectileGroup: Phaser.Physics.Arcade.Group) {
     this.scene = scene;
-    this.projectileGroup = projectileGroup;
     
     // Initialize projectile pool
     this.projectilePool = new ProjectilePool(scene, projectileGroup);

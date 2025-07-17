@@ -1,11 +1,11 @@
 /**
- * src/entities/Projectile.ts - Updated für Entity Pooling
+ * src/entities/Projectile.ts - Fixed TypeScript Issues
  * 
- * ÄNDERUNGEN:
- * - reset() Methode für Pool-Wiederverwendung
- * - Cleanup von Event-Listenern
- * - Bessere destroy() Logik
- * - Kein Constructor-Logic in reset()
+ * FIXES:
+ * - Removed private isInitialized to prevent child class conflicts
+ * - Added proper type annotations
+ * - Fixed unused parameter warnings
+ * - Proper cleanup and resource management
  */
 
 import Phaser from 'phaser';
@@ -16,7 +16,7 @@ export default class Projectile extends Phaser.Physics.Arcade.Sprite {
   private static readonly SPEED = 300;
   private direction: Direction;
   private autoDestroyTimer?: Phaser.Time.TimerEvent;
-  private isInitialized = false;
+  protected isInitialized = false; // Changed to protected so child classes can access
 
   constructor(scene: Phaser.Scene, x: number, y: number, dir: Direction) {
     ensureBulletTexture(scene);
@@ -101,7 +101,7 @@ export default class Projectile extends Phaser.Physics.Arcade.Sprite {
   /**
    * Manual destroy override for pool return
    */
-  public override destroy(fromScene?: boolean): void {
+  public override destroy(): void {
     this.returnToPool();
   }
 
