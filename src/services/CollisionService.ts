@@ -1,6 +1,6 @@
 /**
  * src/services/CollisionService.ts - Fixed TypeScript Issues
- * 
+ *
  * FIXES:
  * - Fixed Logger.debug calls (changed to Logger.info)
  * - Fixed DamageType assignments and typing
@@ -28,16 +28,16 @@ export class CollisionService implements ICollisionService {
   private scene: Phaser.Scene;
   private groups?: CollisionGroups;
   private callbacks?: CollisionCallbacks;
-  
+
   // ========================================
   // Performance Optimization
   // ========================================
   /** Global frame-gate cache: "<projId>:<enemyId>" → lastFrame */
   private readonly frameGate = new Map<string, number>();
-  
+
   /** Collision statistics for debugging and monitoring */
   private stats: Record<string, number> = {};
-  
+
   // ========================================
   // Event Tracking
   // ========================================
@@ -46,7 +46,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Creates a new CollisionService instance
-   * 
+   *
    * @param scene - Active Phaser scene
    */
   constructor(scene: Phaser.Scene) {
@@ -61,7 +61,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Initialize collision detection with entity groups and callbacks
-   * 
+   *
    * @param groups - Entity groups for collision detection
    * @param callbacks - Callback functions for collision events
    */
@@ -71,7 +71,7 @@ export class CollisionService implements ICollisionService {
 
     this.setupPhysicsOverlaps();
     this.setupEventListeners();
-    
+
     Logger.info("CollisionService: Physics overlaps and events configured");
   }
 
@@ -107,8 +107,8 @@ export class CollisionService implements ICollisionService {
    */
   private setupEventListeners(): void {
     // Listen for projectile pool return events
-    this.scene.events.on('projectile:return', this.onProjectileReturn, this);
-    
+    this.scene.events.on("projectile:return", this.onProjectileReturn, this);
+
     Logger.info("CollisionService: Event listeners configured");
   }
 
@@ -118,19 +118,19 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Check if collision should be processed (frame-gate optimization)
-   * 
+   *
    * @param key - Unique collision identifier
    * @returns true if collision should be processed, false if blocked
    */
   private shouldProcessCollision(key: string): boolean {
     const currentFrame = this.scene.game.loop.frame;
     const lastFrame = this.frameGate.get(key);
-    
+
     // Block if already processed in current frame
     if (lastFrame === currentFrame) {
       return false;
     }
-    
+
     // Update frame-gate and allow processing
     this.frameGate.set(key, currentFrame);
     return true;
@@ -138,14 +138,15 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Generate unique collision key for frame-gate
-   * 
+   *
    * @param projectile - Projectile object
    * @param enemy - Enemy object
    * @returns Unique collision key
    */
   private generateCollisionKey(projectile: any, enemy: any): string {
     const projId = projectile.name || `proj_${projectile.x}_${projectile.y}`;
-    const enemyId = enemy.enemyId || enemy.name || `enemy_${enemy.x}_${enemy.y}`;
+    const enemyId =
+      enemy.enemyId || enemy.name || `enemy_${enemy.x}_${enemy.y}`;
     return `${projId}:${enemyId}`;
   }
 
@@ -155,15 +156,17 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Handle projectile hitting enemy with pool-aware logic
-   * 
+   *
    * @param obj1 - First collision object
    * @param obj2 - Second collision object
    */
   private handleProjectileEnemyCollision(obj1: any, obj2: any): void {
     const { projectile, enemy } = this.identifyProjectileEnemy(obj1, obj2);
-    
+
     if (!projectile || !enemy) {
-      Logger.warn("CollisionService: Invalid projectile-enemy collision objects");
+      Logger.warn(
+        "CollisionService: Invalid projectile-enemy collision objects"
+      );
       return;
     }
 
@@ -179,7 +182,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Process collision based on projectile type
-   * 
+   *
    * @param projectile - Projectile that hit
    * @param enemy - Enemy that was hit
    */
@@ -232,54 +235,64 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Handle normal projectile collision
-   * 
+   *
    * @param enemy - Enemy that was hit
    * @returns true (normal projectiles always destroyed)
    */
   private handleNormalProjectileHit(enemy: any): boolean {
-    Logger.info(`🎯 Normal projectile hit enemy ${enemy.enemyId || 'unknown'}`);
+    Logger.info(`🎯 Normal projectile hit enemy ${enemy.enemyId || "unknown"}`);
     return true; // Always destroy normal projectiles
   }
 
   /**
    * Handle pierce projectile collision
-   * 
+   *
    * @param projectile - Pierce projectile
    * @param enemy - Enemy that was hit
    * @returns true if projectile should be destroyed
    */
-  private handlePierceProjectileHit(projectile: PierceProjectile, enemy: any): boolean {
-    if (typeof projectile.onHitEnemy === 'function') {
+  private handlePierceProjectileHit(
+    projectile: PierceProjectile,
+    enemy: any
+  ): boolean {
+    if (typeof projectile.onHitEnemy === "function") {
       const shouldDestroy = projectile.onHitEnemy(enemy);
       Logger.info(`⚡ Pierce projectile hit - destroy: ${shouldDestroy}`);
       return shouldDestroy;
     }
-    
-    Logger.warn("CollisionService: Pierce projectile missing onHitEnemy method");
+
+    Logger.warn(
+      "CollisionService: Pierce projectile missing onHitEnemy method"
+    );
     return true;
   }
 
   /**
    * Handle explosive projectile collision
-   * 
+   *
    * @param projectile - Explosive projectile
    * @param enemy - Enemy that was hit
    * @returns true (explosive projectiles always destroyed)
    */
-  private handleExplosiveProjectileHit(projectile: ExplosiveProjectile, enemy: any): boolean {
-    if (typeof projectile.onHitEnemy === 'function') {
+  private handleExplosiveProjectileHit(
+    projectile: ExplosiveProjectile,
+    enemy: any
+  ): boolean {
+    if (typeof projectile.onHitEnemy === "function") {
       const shouldDestroy = projectile.onHitEnemy(enemy);
       Logger.info(`💥 Explosive projectile hit - destroy: ${shouldDestroy}`);
       return shouldDestroy;
     }
-    
-    Logger.warn("CollisionService: Explosive projectile missing onHitEnemy method");
+
+    Logger.warn(
+      "CollisionService: Explosive projectile missing onHitEnemy method"
+    );
     return true;
   }
 
   /**
    * Safely destroy projectile (returns to pool)
-   * 
+   *
    * @param projectile - Projectile to destroy
    */
   private destroyProjectile(projectile: any): void {
@@ -298,7 +311,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Handle enemy hitting player
-   * 
+   *
    * @param obj1 - First collision object
    * @param obj2 - Second collision object
    */
@@ -330,8 +343,8 @@ export class CollisionService implements ICollisionService {
     // Trigger callbacks and events
     this.callbacks?.onEnemyHitPlayer?.(eventData);
     this.scene.events.emit("collision:enemy-player", eventData);
-    
-    Logger.info(`😵 Enemy ${enemy.enemyId || 'unknown'} hit player`);
+
+    Logger.info(`😵 Enemy ${enemy.enemyId || "unknown"} hit player`);
   }
 
   // ========================================
@@ -340,43 +353,50 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Check if projectile is a pierce projectile
-   * 
+   *
    * @param projectile - Projectile to check
    * @returns true if pierce projectile
    */
   private isPierceProjectile(projectile: any): boolean {
-    return projectile.constructor.name === 'PierceProjectile' || 
-           typeof projectile.onHitEnemy === 'function' &&
-           typeof projectile.getPierceCount === 'function';
+    return (
+      projectile.constructor.name === "PierceProjectile" ||
+      (typeof projectile.onHitEnemy === "function" &&
+        typeof projectile.getPierceCount === "function")
+    );
   }
 
   /**
    * Check if projectile is an explosive projectile
-   * 
+   *
    * @param projectile - Projectile to check
    * @returns true if explosive projectile
    */
   private isExplosiveProjectile(projectile: any): boolean {
-    return projectile.constructor.name === 'ExplosiveProjectile' ||
-           typeof projectile.onHitEnemy === 'function' &&
-           typeof projectile.getExplosionRadius === 'function';
+    return (
+      projectile.constructor.name === "ExplosiveProjectile" ||
+      (typeof projectile.onHitEnemy === "function" &&
+        typeof projectile.getExplosionRadius === "function")
+    );
   }
 
   /**
    * Type-safe projectile/enemy identification
-   * 
+   *
    * @param obj1 - First object
    * @param obj2 - Second object
    * @returns Identified projectile and enemy
    */
-  private identifyProjectileEnemy(obj1: any, obj2: any): { projectile?: any; enemy?: any } {
+  private identifyProjectileEnemy(
+    obj1: any,
+    obj2: any
+  ): { projectile?: any; enemy?: any } {
     // Check for projectile characteristics
-    const hasProjectileBody = (obj: any): boolean => 
-      obj?.body !== undefined && typeof obj.getDirection === 'function';
-    
+    const hasProjectileBody = (obj: any): boolean =>
+      obj?.body !== undefined && typeof obj.getDirection === "function";
+
     // Check for enemy characteristics
-    const hasEnemyRank = (obj: any): boolean => 
-      obj?.rank !== undefined && typeof obj.pursue === 'function';
+    const hasEnemyRank = (obj: any): boolean =>
+      obj?.rank !== undefined && typeof obj.pursue === "function";
 
     if (hasProjectileBody(obj1) && hasEnemyRank(obj2)) {
       return { projectile: obj1, enemy: obj2 };
@@ -389,19 +409,24 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Type-safe player/enemy identification
-   * 
+   *
    * @param obj1 - First object
    * @param obj2 - Second object
    * @returns Identified player and enemy
    */
-  private identifyPlayerEnemy(obj1: any, obj2: any): { player?: any; enemy?: any } {
+  private identifyPlayerEnemy(
+    obj1: any,
+    obj2: any
+  ): { player?: any; enemy?: any } {
     // Check for player characteristics
     const hasPlayerHp = (obj: any): boolean =>
-      obj?.hp !== undefined && obj?.maxHp !== undefined && typeof obj.getCurrentDirection === 'function';
-    
+      obj?.hp !== undefined &&
+      obj?.maxHp !== undefined &&
+      typeof obj.getCurrentDirection === "function";
+
     // Check for enemy characteristics
-    const hasEnemyRank = (obj: any): boolean => 
-      obj?.rank !== undefined && typeof obj.pursue === 'function';
+    const hasEnemyRank = (obj: any): boolean =>
+      obj?.rank !== undefined && typeof obj.pursue === "function";
 
     if (hasPlayerHp(obj1) && hasEnemyRank(obj2)) {
       return { player: obj1, enemy: obj2 };
@@ -418,7 +443,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Create standardized collision event data
-   * 
+   *
    * @param attacker - Object that initiated collision
    * @param target - Object that was hit
    * @param damageType - Type of damage dealt
@@ -455,12 +480,12 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Trigger collision callbacks and events
-   * 
+   *
    * @param eventData - Collision event data
    */
   private triggerCollisionCallbacks(eventData: CollisionEventData): void {
     // Trigger appropriate callback based on collision type
-    if (eventData.attacker.constructor.name.includes('Projectile')) {
+    if (eventData.attacker.constructor.name.includes("Projectile")) {
       this.callbacks?.onProjectileHitEnemy?.(eventData);
       this.scene.events.emit("collision:projectile-enemy", eventData);
     }
@@ -473,21 +498,23 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Handle projectile return to pool
-   * 
+   *
    * @param projectile - Projectile being returned
    */
   private onProjectileReturn(projectile: any): void {
     // Clean up frame-gate entries for this projectile
     const projId = projectile.name || `proj_${projectile.x}_${projectile.y}`;
-    
+
     // Remove all frame-gate entries for this projectile
     for (const [key] of this.frameGate) {
-      if (key.startsWith(projId + ':')) {
+      if (key.startsWith(projId + ":")) {
         this.frameGate.delete(key);
       }
     }
 
-    Logger.info(`🔄 CollisionService: Cleaned frame-gate for returned projectile`);
+    Logger.info(
+      `🔄 CollisionService: Cleaned frame-gate for returned projectile`
+    );
   }
 
   // ========================================
@@ -496,12 +523,12 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Update collision statistics
-   * 
+   *
    * @param damageType - Type of damage that occurred
    */
   private updateCollisionStats(damageType: DamageType): void {
     this.incrementStat("totalHits");
-    
+
     switch (damageType) {
       case DamageType.Normal:
         this.incrementStat("normalHits");
@@ -517,7 +544,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Increment collision statistic
-   * 
+   *
    * @param statName - Name of statistic to increment
    */
   private incrementStat(statName: string): void {
@@ -544,18 +571,20 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Add damage multiplier for specific damage type
-   * 
+   *
    * @param type - Damage type
    * @param multiplier - Damage multiplier
    */
   addDamageMultiplier(type: DamageType, multiplier: number): void {
     // Future implementation for damage scaling
-    Logger.info(`CollisionService: Damage multiplier ${type} = ${multiplier}x (not yet implemented)`);
+    Logger.info(
+      `CollisionService: Damage multiplier ${type} = ${multiplier}x (not yet implemented)`
+    );
   }
 
   /**
    * Get collision statistics for debugging
-   * 
+   *
    * @returns Copy of collision statistics
    */
   getCollisionStats(): Record<string, number> {
@@ -564,7 +593,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Get recent collision events
-   * 
+   *
    * @param count - Number of recent events to return
    * @returns Array of recent collision events
    */
@@ -574,7 +603,7 @@ export class CollisionService implements ICollisionService {
 
   /**
    * Get frame-gate cache size for debugging
-   * 
+   *
    * @returns Number of entries in frame-gate cache
    */
   getFrameGateCacheSize(): number {
@@ -598,19 +627,19 @@ export class CollisionService implements ICollisionService {
    */
   destroy(): void {
     // Remove event listeners
-    this.scene.events.off('projectile:return', this.onProjectileReturn, this);
-    
+    this.scene.events.off("projectile:return", this.onProjectileReturn, this);
+
     // Clear caches
     this.frameGate.clear();
     this.eventHistory.length = 0;
-    
+
     // Reset references
     this.groups = undefined;
     this.callbacks = undefined;
-    
+
     // Reset statistics
     this.resetStatistics();
-    
+
     Logger.info("CollisionService: Destroyed and cleaned up");
   }
 }
