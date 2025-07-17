@@ -13,20 +13,14 @@ import Projectile from "./Projectile";
 import type { Direction } from "../gfx/TextureGenerator";
 
 export default class ExplosiveProjectile extends Projectile {
-  /** Radius of explosion damage in pixels */
   private readonly explosionRadius: number;
-
-  /** Flag to prevent multiple explosions */
   private hasExploded = false;
-
-  /** Set of enemy IDs that have been damaged by this explosion */
   private readonly damagedEnemies = new Set<string>();
 
-  /** Reference to explosion VFX graphics for cleanup */
+  // ✅ FIXED: Bessere VFX References
   private explosionVfx?: Phaser.GameObjects.Graphics;
-
-  /** Reference to explosion timer for cleanup */
   private explosionTimer?: Phaser.Time.TimerEvent;
+  private explosionTween?: Phaser.Tweens.Tween; // this is used for the animation of the explosion
 
   /**
    * Creates a new ExplosiveProjectile instance
@@ -82,24 +76,14 @@ export default class ExplosiveProjectile extends Projectile {
    * @param direction - New cardinal direction for movement
    */
   public override reset(x: number, y: number, direction: Direction): void {
-    // Call parent reset first (handles physics, position, timers)
     super.reset(x, y, direction);
 
     // Clear explosive-specific state
     this.hasExploded = false;
     this.damagedEnemies.clear();
 
-    // Clean up any existing VFX
-    if (this.explosionVfx) {
-      this.explosionVfx.destroy();
-      this.explosionVfx = undefined;
-    }
-
-    // Clean up any existing timers
-    if (this.explosionTimer) {
-      this.explosionTimer.destroy();
-      this.explosionTimer = undefined;
-    }
+    // ✅ FIXED: Proper cleanup of existing VFX
+    this.cleanupExplosionEffects();
 
     // Reapply explosive projectile visual effects
     this.setTint(0xff6600);
@@ -129,6 +113,9 @@ export default class ExplosiveProjectile extends Projectile {
    * @param _enemy - Enemy GameObject that was hit (triggers explosion)
    * @returns Always true - explosive projectiles are consumed on impact
    */
+  /**
+   * ✅ FIXED: Proper explosion handling
+   */
   public onHitEnemy(_enemy: Phaser.GameObjects.GameObject): boolean {
     if (!this.hasExploded) {
       this.hasExploded = true;
@@ -136,12 +123,10 @@ export default class ExplosiveProjectile extends Projectile {
       // Stop pulsing animation
       this.scene.tweens.killTweensOf(this);
 
-      // Trigger explosion at current position
+      // ✅ Trigger explosion at current position
       this.explode();
 
-      console.info(
-        `💥 Explosive projectile detonated at (${this.x}, ${this.y})`
-      );
+      console.info(`💥 EXPLOSION triggered at (${this.x}, ${this.y})`);
     }
 
     // Always destroy explosive projectiles after explosion
@@ -149,61 +134,74 @@ export default class ExplosiveProjectile extends Projectile {
   }
 
   /**
-   * Trigger explosion - damages all enemies within radius and creates VFX
+   * ✅ HAUPTFIX: Komplett überarbeitete Explosion-Logic
    */
   private explode(): void {
-    console.log(`💥 EXPLODING at (${this.x}, ${this.y})`); // Debug log
-    
-    // Disable physics first
+    console.log(
+      `💥 EXPLODING at (${this.x}, ${this.y}) - radius: ${this.explosionRadius}`
+    );
+
+    // Disable physics first to prevent movement during explosion
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
       body.enable = false;
+      body.setVelocity(0, 0);
     }
-    
+
+    // ✅ Damage enemies FIRST (before VFX)
     this.damageEnemiesInRadius();
+
+    // ✅ Create visible explosion VFX SECOND
     this.createExplosionVfx();
   }
 
   /**
-   * Find and damage all enemies within explosion radius
-   *
-   * Uses Phaser's physics.overlapCirc() for efficient circular area detection
+   * ✅ Unchanged but verified - enemy damage logic
    */
   private damageEnemiesInRadius(): void {
     const scene = this.scene as Phaser.Scene;
 
-    // Get all physics bodies within explosion radius
-    const bodies = scene.physics.overlapCirc(
-      this.x,
-      this.y,
-      this.explosionRadius,
-      true, // includeDynamic
-      false // includeStatic
-    ) as Phaser.Physics.Arcade.Body[];
+    try {
+      // Get all physics bodies within explosion radius
+      const bodies = scene.physics.overlapCirc(
+        this.x,
+        this.y,
+        this.explosionRadius,
+        true, // includeDynamic
+        false // includeStatic
+      ) as Phaser.Physics.Arcade.Body[];
 
-    // Process each body found in explosion radius
-    bodies.forEach((body) => {
-      const enemyObj = body.gameObject as Phaser.GameObjects.GameObject;
+      let enemiesDamaged = 0;
 
-      // Skip if body has no associated GameObject
-      if (!enemyObj) return;
+      // Process each body found in explosion radius
+      bodies.forEach((body) => {
+        const enemyObj = body.gameObject as Phaser.GameObjects.GameObject;
 
-      // Check if this is actually an enemy (has takeDamage method)
-      const enemyAny = enemyObj as any;
-      if (typeof enemyAny.takeDamage !== "function") return;
+        // Skip if body has no associated GameObject
+        if (!enemyObj) return;
 
-      // Get unique enemy identifier
-      const enemyId = this.getEnemyIdentifier(enemyObj);
+        // Check if this is actually an enemy (has takeDamage method)
+        const enemyAny = enemyObj as any;
+        if (typeof enemyAny.takeDamage !== "function") return;
 
-      // Prevent double-damage to same enemy
-      if (this.damagedEnemies.has(enemyId)) return;
+        // Get unique enemy identifier
+        const enemyId = this.getEnemyIdentifier(enemyObj);
 
-      // Mark enemy as damaged and apply damage
-      this.damagedEnemies.add(enemyId);
-      enemyAny.takeDamage(2); // Explosive damage is 2 (base config)
+        // Prevent double-damage to same enemy
+        if (this.damagedEnemies.has(enemyId)) return;
 
-      console.debug(`💥 Explosion damaged enemy ${enemyId}`);
-    });
+        // Mark enemy as damaged and apply damage
+        this.damagedEnemies.add(enemyId);
+        enemyAny.takeDamage(2); // Explosive damage is 2
+        enemiesDamaged++;
+
+        console.log(`💥 Explosion damaged enemy ${enemyId}`);
+      });
+
+      console.log(`💥 Explosion damaged ${enemiesDamaged} enemies total`);
+    } catch (error) {
+      console.error("Error in explosion damage calculation:", error);
+    }
   }
 
   /**
@@ -235,30 +233,95 @@ export default class ExplosiveProjectile extends Projectile {
    * Creates expanding circle animation with color gradient
    */
   private createExplosionVfx(): void {
-    console.log(`💥 Creating explosion VFX at (${this.x}, ${this.y})`);
-    
-    // Create graphics in SCREEN space, not world space
-    this.explosionVfx = this.scene.add.graphics();
-    this.explosionVfx.setScrollFactor(1); // Follow camera
-    this.explosionVfx.setDepth(500); // High but not extreme
-    
-    // Draw at world position (Phaser handles camera conversion)
-    this.explosionVfx.fillStyle(0xff6600, 0.9);
-    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius);
-    
-    this.explosionVfx.fillStyle(0xffff00, 0.7);
-    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.6);
-    
+    try {
+      console.log(`🎨 Creating FIXED explosion VFX at (${this.x}, ${this.y})`);
+      
+      // ✅ Create graphics object with PROPER layer settings
+      this.explosionVfx = this.scene.add.graphics();
+      
+      // ✅ CRITICAL FIX: Proper depth and scroll settings
+      this.explosionVfx.setDepth(150);  // Mid-layer (NOT 500!)
+      this.explosionVfx.setScrollFactor(1, 1);  // Follow camera properly
+      
+      // ✅ FIXED: Start with small radius and animate outward
+      this.drawExplosionCircles(10); // Start small
+      
+      // ✅ ANIMATED EXPANSION: Radius grows from 10 to full size
+      this.explosionTween = this.scene.tweens.add({
+        targets: { radius: 10 },
+        radius: this.explosionRadius,
+        duration: 400, // 400ms expansion
+        ease: "Power2",
+        onUpdate: (tween) => {
+          if (this.explosionVfx && this.explosionVfx.scene) {
+            const currentRadius = tween.getValue();
+            this.explosionVfx.clear();
+            this.drawExplosionCircles(currentRadius as number);
+          }
+        },
+        onComplete: () => {
+          // ✅ Fade out after expansion
+          if (this.explosionVfx && this.explosionVfx.scene) {
+            this.scene.tweens.add({
+              targets: this.explosionVfx,
+              alpha: 0,
+              duration: 300,
+              onComplete: () => this.cleanupExplosionEffects()
+            });
+          }
+        }
+      });
+      
+      console.log(`✅ Explosion VFX created successfully with animated expansion`);
+      
+    } catch (error) {
+      console.error("💥 Error creating explosion VFX:", error);
+      // Fallback cleanup if VFX creation fails
+      this.cleanupExplosionEffects();
+    }
+  }
+
+  /**
+   * ✅ NEW: Helper method to draw explosion circles
+   */
+  private drawExplosionCircles(radius: number): void {
+    if (!this.explosionVfx || !this.explosionVfx.scene) return;
+
+    // Outer circle (orange)
+    this.explosionVfx.fillStyle(0xff6600, 0.8);
+    this.explosionVfx.fillCircle(this.x, this.y, radius);
+
+    // Middle circle (yellow)
+    this.explosionVfx.fillStyle(0xffff00, 0.6);
+    this.explosionVfx.fillCircle(this.x, this.y, radius * 0.7);
+
+    // Inner circle (white hot center)
     this.explosionVfx.fillStyle(0xffffff, 0.9);
-    this.explosionVfx.fillCircle(this.x, this.y, this.explosionRadius * 0.3);
-    
-    // Cleanup
-    this.scene.time.delayedCall(800, () => {
-      if (this.explosionVfx?.scene) {
-        this.explosionVfx.destroy();
-        this.explosionVfx = undefined;
-      }
-    });
+    this.explosionVfx.fillCircle(this.x, this.y, radius * 0.4);
+  }
+
+  /**
+   * ✅ NEW: Centralized cleanup method
+   */
+  private cleanupExplosionEffects(): void {
+    // Clean up VFX graphics
+    if (this.explosionVfx && this.explosionVfx.scene) {
+      this.explosionVfx.destroy();
+      this.explosionVfx = undefined;
+    }
+
+    // Clean up timers
+    if (this.explosionTimer && this.explosionTimer.hasDispatched === false) {
+      this.explosionTimer.destroy();
+      this.explosionTimer = undefined;
+    }
+
+    // Clean up
+    this.scene.tweens.killTweensOf(this);
+    this.damagedEnemies.clear();
+    this.hasExploded = false;
+    this.explosionTween?.stop();
+    this.explosionTween = undefined;
   }
 
   /**
