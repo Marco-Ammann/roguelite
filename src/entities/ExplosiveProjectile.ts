@@ -3,6 +3,7 @@
  * ------------------------------------------------------------
  * Explosive projectile that detonates on first impact and
  * applies single‑frame AOE damage via `physics.overlapCirc`.
+ * Strict‑type‑safe für Phaser 3.90 + TypeScript 5.8.
  */
 
 import Phaser from 'phaser';
@@ -18,10 +19,10 @@ export default class ExplosiveProjectile extends Projectile {
 
   /**
    * @param scene   Active Phaser scene
-   * @param x       World X
-   * @param y       World Y
+   * @param x       World‑X
+   * @param y       World‑Y
    * @param dir     Cardinal direction
-   * @param radius  AOE radius in px (default 60)
+   * @param radius  AOE radius in px (default 60)
    */
   constructor(
     scene: Phaser.Scene,
@@ -39,7 +40,7 @@ export default class ExplosiveProjectile extends Projectile {
   }
 
   /**
-   * Called by CollisionService on first enemy touch.
+   * Triggered by CollisionService on first enemy touch.
    * Always returns `true` so the service removes the projectile.
    */
   public onHitEnemy(): boolean {
@@ -56,44 +57,40 @@ export default class ExplosiveProjectile extends Projectile {
 
   /** Detonates, damages nearby enemies and spawns a simple VFX. */
   private explode(): void {
-    // Disable physics body so no further overlaps are generated.
+    // Disable physics body ➜ prevents follow‑up overlaps.
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
 
-    const { x, y } = this;
     const scene = this.scene as Phaser.Scene;
-    const enemiesGroup =
-      (scene as any).enemiesGroup ??
-      (scene.physics.world as any).groups?.enemies ??
-      null;
 
     /**
-     * Phaser 3.90 signature: overlapCirc(
-     *   x, y, radius,
-     *   collideCallback?: (enemy) => void,
-     *   context?: any
-     * )
-     * → wir filtern binnen des Callbacks, ob das GameObject überhaupt
-     *    zum enemiesGroup gehört.
+     * Phaser 3.90 signature:
+     *   overlapCirc(x, y, radius, includeDynamic = true, includeStatic = false)
+     * ➜ liefert ein Array von Bodies (keine Callbacks möglich!).
      */
-    scene.physics.overlapCirc(
-      x,
-      y,
+    const bodies = scene.physics.overlapCirc(
+      this.x,
+      this.y,
       this.explosionRadius,
-      (enemyObj: Phaser.GameObjects.GameObject) => {
-        if (enemiesGroup && !enemiesGroup.contains(enemyObj)) return;
+      true,   // includeDynamic
+      false,  // includeStatic
+    ) as Phaser.Physics.Arcade.Body[];
 
-        const id =
-          (enemyObj as any).enemyId ??
-          enemyObj.name ??
-          `${(enemyObj as any).x}_${(enemyObj as any).y}`;
+    bodies.forEach((body) => {
+      const enemyObj = body.gameObject as Phaser.GameObjects.GameObject;
 
-        if (this.damaged.has(id)) return;
+      // Defensive: body kann zu Partikeln o. Ä. gehören
+      if (!enemyObj) return;
 
-        this.damaged.add(id);
-        (enemyObj as any).takeDamage?.(2); // 2 = base explosive damage
-      },
-      this,
-    );
+      const id =
+        (enemyObj as any).enemyId ??
+        enemyObj.name ??
+        `${(enemyObj as any).x}_${(enemyObj as any).y}`;
+
+      if (this.damaged.has(id)) return;
+
+      this.damaged.add(id);
+      (enemyObj as any).takeDamage?.(2); // 2 = base explosive damage
+    });
 
     console.info(
       `💥 Explosion hit ${this.damaged.size} enemies (radius ${this.explosionRadius}px)`,
