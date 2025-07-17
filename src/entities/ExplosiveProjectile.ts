@@ -1,6 +1,8 @@
 /**
  * src/entities/ExplosiveProjectile.ts
- * Projectile that explodes on impact, dealing AOE damage
+ * ------------------------------------------------------------
+ * Explosive projectile that detonates on first impact and
+ * applies single‑frame AOE damage via `physics.overlapCirc`.
  */
 
 import Phaser from 'phaser';
@@ -8,119 +10,126 @@ import Projectile from './Projectile';
 import type { Direction } from '../gfx/TextureGenerator';
 
 export default class ExplosiveProjectile extends Projectile {
-  private explosionRadius: number;
+  private readonly explosionRadius: number;
   private hasExploded = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, dir: Direction, explosionRadius = 60) {
+  /** Track enemies already damaged by this explosion */
+  private readonly damaged = new Set<string>();
+
+  /**
+   * @param scene   Active Phaser scene
+   * @param x       World X
+   * @param y       World Y
+   * @param dir     Cardinal direction
+   * @param radius  AOE radius in px (default 60)
+   */
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    dir: Direction,
+    radius = 60,
+  ) {
     super(scene, x, y, dir);
-    this.explosionRadius = explosionRadius;
-    
-    // Visual indicator: Orange tint for explosive projectiles
+    this.explosionRadius = radius;
+
+    // Orange tint indicates explosive type
     this.setTint(0xff6600);
-    
-    console.log(`💣 Explosive Projectile: ${explosionRadius}px radius`);
+    console.info(`💥 Explosive projectile created (radius ${radius}px)`);
   }
 
   /**
-   * Called by CollisionService when hitting enemy
-   * Returns true if projectile should be destroyed
+   * Called by CollisionService on first enemy touch.
+   * Always returns `true` so the service removes the projectile.
    */
-  onHitEnemy(_enemy: Phaser.GameObjects.GameObject): boolean {
-    if (this.hasExploded) return true;
-    
-    this.hasExploded = true;
-    this.explode();
-    
-    console.log(`💥 Explosive projectile detonated`);
+  public onHitEnemy(): boolean {
+    if (!this.hasExploded) {
+      this.hasExploded = true;
+      this.explode();
+    }
     return true;
   }
 
-  /**
-   * Create explosion effect and deal AOE damage
-   */
+  /* ------------------------------------------------------------------ */
+  /* private helpers                                                    */
+  /* ------------------------------------------------------------------ */
+
+  /** Detonates, damages nearby enemies and spawns a simple VFX. */
   private explode(): void {
-    const explosionCenter = new Phaser.Math.Vector2(this.x, this.y);
-    
-    // Create visual explosion effect
-    this.createExplosionEffect();
-    
-    // Find all enemies in explosion radius
+    // Disable physics body so no further overlaps are generated.
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+
+    const { x, y } = this;
     const scene = this.scene as Phaser.Scene;
-    const enemies = scene.children.getAll().filter(child => 
-      child instanceof Phaser.Physics.Arcade.Sprite && 
-      (child as any).rank !== undefined
+    const enemiesGroup =
+      (scene as any).enemiesGroup ??
+      (scene.physics.world as any).groups?.enemies ??
+      null;
+
+    /**
+     * Phaser 3.90 signature: overlapCirc(
+     *   x, y, radius,
+     *   collideCallback?: (enemy) => void,
+     *   context?: any
+     * )
+     * → wir filtern binnen des Callbacks, ob das GameObject überhaupt
+     *    zum enemiesGroup gehört.
+     */
+    scene.physics.overlapCirc(
+      x,
+      y,
+      this.explosionRadius,
+      (enemyObj: Phaser.GameObjects.GameObject) => {
+        if (enemiesGroup && !enemiesGroup.contains(enemyObj)) return;
+
+        const id =
+          (enemyObj as any).enemyId ??
+          enemyObj.name ??
+          `${(enemyObj as any).x}_${(enemyObj as any).y}`;
+
+        if (this.damaged.has(id)) return;
+
+        this.damaged.add(id);
+        (enemyObj as any).takeDamage?.(2); // 2 = base explosive damage
+      },
+      this,
     );
 
-    let hitCount = 0;
-    enemies.forEach(enemy => {
-      const sprite = enemy as Phaser.GameObjects.Sprite;
-      const distance = Phaser.Math.Distance.Between(
-        explosionCenter.x, explosionCenter.y,
-        sprite.x, sprite.y
-      );
-      
-      if (distance <= this.explosionRadius) {
-        const enemyObj = enemy as any;
-        if (enemyObj.takeDamage) {
-          enemyObj.takeDamage(2); // Explosive damage
-          hitCount++;
-        }
-      }
-    });
-    
-    console.log(`💥 Explosion hit ${hitCount} enemies in ${this.explosionRadius}px radius`);
-    
-    // Emit event for collision service
-    this.scene.events.emit('explosion:damage', {
-      center: explosionCenter,
-      radius: this.explosionRadius,
-      damage: 2,
-      hitCount
-    });
+    console.info(
+      `💥 Explosion hit ${this.damaged.size} enemies (radius ${this.explosionRadius}px)`,
+    );
+
+    this.spawnExplosionVfx();
   }
 
-  /**
-   * Create visual explosion effect
-   */
-  private createExplosionEffect(): void {
-    // Create temporary explosion graphics
-    const explosion = this.scene.add.graphics();
-    explosion.setDepth(15);
-    
-    // Explosion animation
-    let currentRadius = 10;
-    const maxRadius = this.explosionRadius;
-    
+  /** Simple expanding‑circle VFX – fully procedural. */
+  private spawnExplosionVfx(): void {
+    const gfx = this.scene.add.graphics();
+    gfx.setDepth(15);
+
+    let current = 10;
+    const step = 8;
     const timer = this.scene.time.addEvent({
       delay: 50,
-      repeat: 6,
+      repeat: Math.ceil(this.explosionRadius / step),
       callback: () => {
-        explosion.clear();
-        
-        // Orange explosion circle
-        explosion.fillStyle(0xff6600, 0.6 - (currentRadius / maxRadius) * 0.5);
-        explosion.fillCircle(this.x, this.y, currentRadius);
-        
-        // Inner yellow core
-        explosion.fillStyle(0xffff00, 0.8 - (currentRadius / maxRadius) * 0.6);
-        explosion.fillCircle(this.x, this.y, currentRadius * 0.5);
-        
-        currentRadius += 10;
+        gfx.clear();
+        gfx.fillStyle(0xff6600, 0.6 - current / this.explosionRadius / 2);
+        gfx.fillCircle(this.x, this.y, current);
+        gfx.fillStyle(0xffff00, 0.8 - current / this.explosionRadius / 1.5);
+        gfx.fillCircle(this.x, this.y, current * 0.5);
+        current += step;
       },
-      callbackScope: this
     });
-    
-    // Clean up explosion after animation
+
     this.scene.time.delayedCall(400, () => {
-      explosion.destroy();
+      gfx.destroy();
       timer.destroy();
     });
   }
 
-  /**
-   * Get explosion radius for UI/debugging
-   */
-  getExplosionRadius(): number {
+  /** Public getter for UI / debug overlay */
+  public getExplosionRadius(): number {
     return this.explosionRadius;
   }
 }
