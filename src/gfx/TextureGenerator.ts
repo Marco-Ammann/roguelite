@@ -18,6 +18,7 @@
 
 import Phaser from 'phaser';
 import TextureCache from '../systems/TextureCache';
+import GraphicsPool from '../systems/GraphicsPool';
 import { EnemyRank } from '../enums/EnemyRank';
 
 export type Direction = 'down' | 'up' | 'left' | 'right';

@@ -186,7 +186,7 @@ export default class MemoryDebugOverlay extends Phaser.GameObjects.Text {
   /**
    * Calculate pool reuse rate
    */
-  private calculateReuseRate(stats: typeof GraphicsPool.getStats): number {
+  private calculateReuseRate(stats: ReturnType<typeof GraphicsPool.getStats>): number {
     if (stats.created === 0) return 0;
     return Math.round((stats.reused / (stats.created + stats.reused)) * 100);
   }
