@@ -123,7 +123,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * Initialize physics properties
      */
     private initializePhysics(): void {
-        // Set up physics body properties
+        // Set up physics body
         const body = this.body as Phaser.Physics.Arcade.Body;
         if (body) {
             body.setCollideWorldBounds(true);
@@ -460,24 +460,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
     private die(): void {
         Logger.info('💀 Player: Died - restarting scene');
         
-        // Death visual effect
-        this.setTint(0x888888);
-        this.setAlpha(0.7);
-        
-        // Stop movement
+        // Stop movement first
         this.setVelocity(0, 0);
         
-        // Cleanup UI
-        this.healthBar.destroy();
+        // Cleanup UI safely
+        if (this.healthBar && this.healthBar.scene) {
+          this.healthBar.destroy();
+        }
         
-        // Audio feedback
-        this.scene.events.emit('audio:play', 'player-death', { volume: 0.5 });
-        
-        // Restart scene after brief delay
+        // Delayed restart with error handling
         this.scene.time.delayedCall(1000, () => {
+          try {
             this.scene.scene.restart();
+          } catch (error) {
+            Logger.error('Error restarting scene:', error);
+            location.reload(); // Fallback
+          }
         });
-    }
+      }
 
     // ========================================
     // Public API

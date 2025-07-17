@@ -240,11 +240,11 @@ export default class MainScene extends Phaser.Scene {
         Logger.info(`🎯 MainScene: Projectile hit processed - advanced effects ready`);
         
         // Example: Screen shake effect
-        this.cameras.main.shake(50, 0.01);
+        this.cameras.main.shake(30, 0.005); // war: (50, 0.01)
         
         // Example: Emit event for other systems
         this.events.emit('gameplay:projectile-hit', eventData);
-    }
+      }
 
     /**
      * Handle enemy hit events - can be extended for player feedback

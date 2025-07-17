@@ -153,14 +153,13 @@ export default class PierceProjectile extends Projectile {
    */
   private shouldProcessHit(enemyId: string): boolean {
     const currentFrame = this.scene.game.loop.frame;
-    const lastHitFrame = this.hitGate.get(enemyId);
+    const lastFrame = this.hitGate.get(enemyId);
     
-    // Block if already hit this enemy in current frame
-    if (lastHitFrame === currentFrame) {
+    // Block if hit in last 5 frames (not just current frame)
+    if (lastFrame && currentFrame - lastFrame < 5) {
       return false;
     }
     
-    // Update frame-gate and allow hit
     this.hitGate.set(enemyId, currentFrame);
     return true;
   }

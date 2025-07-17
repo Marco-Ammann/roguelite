@@ -62,12 +62,16 @@ export class EnemySpawnService {
       this.finishWave();
       return;
     }
-
+  
     const spawnConfig = this.spawnsRemaining.shift()!;
-    const enemy = this.createEnemyAtRandomPosition(spawnConfig);
-    this.enemies.add(enemy);
-
-    console.log(`🎭 Spawned ${spawnConfig.rank} enemy (${this.spawnsRemaining.length} remaining)`);
+    
+    // Spawn multiple enemies if count > 1
+    for (let i = 0; i < spawnConfig.count; i++) {
+      const enemy = this.createEnemyAtRandomPosition(spawnConfig);
+      this.enemies.add(enemy);
+    }
+  
+    console.log(`🎭 Spawned ${spawnConfig.count} ${spawnConfig.rank} enemies`);
   }
 
   /**
@@ -184,24 +188,24 @@ export const DEFAULT_WAVES: WaveConfig[] = [
   {
     wave: 1,
     enemies: [
-      { count: 3, rank: EnemyRank.Standard },
-    ],
-    delay: 1000, // 1 second between spawns
-  },
-  {
-    wave: 2,
-    enemies: [
-      { count: 4, rank: EnemyRank.Standard, speedMultiplier: 1.2 },
-      { count: 1, rank: EnemyRank.Elite },
+      { count: 5, rank: EnemyRank.Standard }, // mehr enemies
     ],
     delay: 800,
   },
   {
-    wave: 3,
+    wave: 2,
     enemies: [
-      { count: 6, rank: EnemyRank.Standard, speedMultiplier: 1.4 },
-      { count: 2, rank: EnemyRank.Elite, speedMultiplier: 1.1 },
+      { count: 7, rank: EnemyRank.Standard },
+      { count: 2, rank: EnemyRank.Elite },
     ],
     delay: 600,
+  },
+  {
+    wave: 3,
+    enemies: [
+      { count: 10, rank: EnemyRank.Standard },
+      { count: 3, rank: EnemyRank.Elite },
+    ],
+    delay: 400,
   },
 ];
