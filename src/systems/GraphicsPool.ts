@@ -251,8 +251,7 @@ export default class GraphicsPool {
     graphics.setScale(1, 1);
     graphics.setAlpha(1);
     
-    // Reset tint (Graphics doesn't have clearTint, use setTint)
-    graphics.setTint(0xffffff);
+    // Graphics objects don't have tint - skip tint reset
     
     // Reset blend mode
     graphics.setBlendMode(Phaser.BlendModes.NORMAL);

@@ -4,6 +4,7 @@
  * PERFORMANCE IMPROVEMENTS:
  * - Integrated ProjectilePool for zero-allocation projectile management
  * - Added PerformanceDebugOverlay for real-time pool monitoring
+ * - Added MemoryDebugOverlay (F4) for Phase 1.2 memory management monitoring
  * - Proper cleanup of all pooled resources on scene shutdown
  * - Memory-efficient entity management with pooling systems
  * 
@@ -11,7 +12,7 @@
  * - Wave-based enemy spawning with configurable difficulty
  * - Pool-aware collision system with frame-gate protection
  * - Advanced weapon system with pierce and explosive projectiles
- * - Comprehensive debug overlays (F1: general, F2: collision, F3: performance)
+ * - Comprehensive debug overlays (F1: general, F2: collision, F3: performance, F4: memory)
  * - Clean shutdown and resource management
  */
 
@@ -22,6 +23,7 @@ import { createPlayer } from '../factories/EntityFactory';
 import DebugOverlay from '../ui/DebugOverlay';
 import CollisionDebugOverlay from '../ui/CollisionDebugOverlay';
 import PerformanceDebugOverlay from '../ui/PerformanceDebugOverlay';
+import MemoryDebugOverlay from '../ui/MemoryDebugOverlay';
 import WeaponDisplay from '../ui/WeaponDisplay';
 import Projectile from '../entities/Projectile';
 import { EnemySpawnService, DEFAULT_WAVES } from '../services/EnemySpawnService';
@@ -29,7 +31,6 @@ import { CollisionService } from '../services/CollisionService';
 import { WeaponSystem } from '../systems/WeaponSystem';
 import type { CollisionGroups, CollisionCallbacks } from '../interfaces/ICollisionSystem';
 import Logger from '../utils/Logger';
-import MemoryDebugOverlay from '../ui/MemoryDebugOverlay';
 
 export default class MainScene extends Phaser.Scene {
     // ========================================
@@ -78,7 +79,7 @@ export default class MainScene extends Phaser.Scene {
      * Create scene - initializes all game systems with pool integration
      */
     create(): void {
-        Logger.info("🎮 MainScene: Starting game initialization (Phase 1.1 - Pool Integration)");
+        Logger.info("🎮 MainScene: Starting game initialization (Phase 1.2 - Memory Management)");
         
         // Initialize systems in dependency order
         this.createGameEntities();
@@ -88,9 +89,9 @@ export default class MainScene extends Phaser.Scene {
         this.setupUserInterface();
         this.startGameplay();
         
-        Logger.info("✅ MainScene: Setup complete with ProjectilePool integration");
+        Logger.info("✅ MainScene: Setup complete with Memory Management System");
         Logger.info("💡 Controls: WASD/Arrows=Move, Space=Shoot, Q=Switch Weapon, N=Next Wave");
-        Logger.info("🔧 Debug: F1=General, F2=Collision, F3=Performance");
+        Logger.info("🔧 Debug: F1=General, F2=Collision, F3=Performance, F4=Memory");
     }
 
     // ========================================
@@ -192,10 +193,10 @@ export default class MainScene extends Phaser.Scene {
     }
 
     /**
-     * Setup user interface elements
+     * Setup user interface elements with Phase 1.2 memory monitoring
      */
     private setupUserInterface(): void {
-        Logger.info("🖥️ MainScene: Setting up user interface");
+        Logger.info("🖥️ MainScene: Setting up user interface with Phase 1.2 memory monitoring");
         
         // Create debug overlays
         new DebugOverlay(this, this.player, this.enemies, this.projectiles);
@@ -204,10 +205,13 @@ export default class MainScene extends Phaser.Scene {
         // Create performance overlay with pool monitoring
         new PerformanceDebugOverlay(this, this.weaponSystem);
         
+        // Create memory overlay for Phase 1.2 monitoring (F4 key)
+        new MemoryDebugOverlay(this);
+        
         // Create weapon display
         new WeaponDisplay(this);
         
-        Logger.info("✅ MainScene: User interface created");
+        Logger.info("✅ MainScene: User interface created with F4 memory monitoring");
     }
 
     /**
