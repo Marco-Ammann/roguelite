@@ -16,13 +16,6 @@ import { WeaponType } from "./WeaponSystem";
 import type { Direction } from "../gfx/TextureGenerator";
 import Logger from "../utils/Logger";
 
-interface PoolableProjectile {
-  reset(x: number, y: number, direction: Direction): void;
-  setActive(active: boolean): any; // Changed from PoolableProjectile to any
-  setVisible(visible: boolean): any; // Changed from PoolableProjectile to any
-  destroy(): void;
-}
-
 export default class ProjectilePool {
   private scene: Phaser.Scene;
   private projectileGroup: Phaser.Physics.Arcade.Group;
@@ -102,25 +95,25 @@ export default class ProjectilePool {
     y: number,
     direction: Direction
   ): Phaser.GameObjects.GameObject {
-    let projectile: PoolableProjectile;
+    let projectile: Phaser.GameObjects.GameObject;
 
     switch (type) {
       case WeaponType.Pierce:
-        projectile = this.getPierceProjectile() as PoolableProjectile;
+        projectile = this.getPierceProjectile();
         this.stats.active.pierce++;
         break;
       case WeaponType.Explosive:
-        projectile = this.getExplosiveProjectile() as PoolableProjectile;
+        projectile = this.getExplosiveProjectile();
         this.stats.active.explosive++;
         break;
       default:
-        projectile = this.getNormalProjectile() as PoolableProjectile;
+        projectile = this.getNormalProjectile();
         this.stats.active.normal++;
         break;
     }
 
     // Reset position und direction
-    projectile.reset(x, y, direction);
+    (projectile as any).reset(x, y, direction);
     projectile.setActive(true);
     projectile.setVisible(true);
 
