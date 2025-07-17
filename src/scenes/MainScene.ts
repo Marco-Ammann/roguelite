@@ -29,6 +29,7 @@ import { CollisionService } from '../services/CollisionService';
 import { WeaponSystem } from '../systems/WeaponSystem';
 import type { CollisionGroups, CollisionCallbacks } from '../interfaces/ICollisionSystem';
 import Logger from '../utils/Logger';
+import MemoryDebugOverlay from '../ui/MemoryDebugOverlay';
 
 export default class MainScene extends Phaser.Scene {
     // ========================================
