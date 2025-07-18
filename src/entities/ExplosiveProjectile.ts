@@ -134,26 +134,16 @@ export default class ExplosiveProjectile extends Projectile {
   }
 
   /**
-   * ✅ HAUPTFIX: Komplett überarbeitete Explosion-Logic
+   * Explodes the projectile at its current position
    */
   private explode(): void {
-    console.log(
-      `💥 EXPLODING at (${this.x}, ${this.y}) - radius: ${this.explosionRadius}`
-    );
-
-    // Disable physics first to prevent movement during explosion
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    if (body) {
-      body.enable = false;
-      body.setVelocity(0, 0);
-    }
-
-    // ✅ Damage enemies FIRST (before VFX)
-    this.damageEnemiesInRadius();
-
-    // ✅ Create visible explosion VFX SECOND
-    this.createExplosionVfx();
-  }
+    // Position VOR Pool-Return speichern
+    const explosionX = this.x;
+    const explosionY = this.y;
+    
+    this.createExplosionVfx(explosionX, explosionY);
+    this.damageEnemiesInRadius(explosionX, explosionY);
+}
 
   /**
    * ✅ Unchanged but verified - enemy damage logic

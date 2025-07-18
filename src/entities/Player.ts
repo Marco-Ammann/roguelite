@@ -458,26 +458,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite implements IDam
      * Handle player death
      */
     private die(): void {
-        Logger.info('💀 Player: Died - restarting scene');
-        
-        // Stop movement first
+        // Sofort Movement stoppen
         this.setVelocity(0, 0);
+        this.setActive(false);
         
-        // Cleanup UI safely
-        if (this.healthBar && this.healthBar.scene) {
-          this.healthBar.destroy();
-        }
+        // Collision deaktivieren
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        if (body) body.enable = false;
         
-        // Delayed restart with error handling
-        this.scene.time.delayedCall(1000, () => {
-          try {
+        // UI safe cleanup
+        this.scene.events.emit('player:died');
+        
+        // Kürzere Verzögerung
+        this.scene.time.delayedCall(500, () => {
             this.scene.scene.restart();
-          } catch (error) {
-            Logger.error('Error restarting scene:', error);
-            location.reload(); // Fallback
-          }
         });
-      }
+    }
 
     // ========================================
     // Public API
